@@ -1,0 +1,128 @@
+@using planirovanie.Models
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop show" @onclick="Close"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EditingEvent.Id > 0 ? "Редактирование мероприятия" : "Новое мероприятие")</h5>
+                    <button type="button" class="btn-close" @onclick="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Название мероприятия *</label>
+                        <input class="form-control" @bind="EditingEvent.Title" placeholder="Согласно ТЗ" />
+                    </div>
+                    <div class="row g-2">
+                        <div class="mb-3">
+                            <label class="form-label">Начало</label>
+                            <input class="form-control" type="datetime-local" @bind="EditingEvent.StartDate" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Окончание</label>
+                            <input class="form-control" type="datetime-local" @bind="EditingEvent.EndDate" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Категория</label>
+                            <select class="form-select" @bind="EditingEvent.CategoryId">
+                                @foreach (var category in Categories)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Место проведения</label>
+                            <input class="form-control" @bind="EditingEvent.Location" placeholder="Например: Зал заседаний" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Организатор (Кто проводит)</label>
+                            <input class="form-control" @bind="EditingEvent.Organizer" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Участники</label>
+                            <input class="form-control" @bind="EditingEvent.Participants" placeholder="ФИО через запятую" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дополнительная информация</label>
+                        <textarea class="form-control" rows="3" @bind="EditingEvent.AdditionalInfo"></textarea>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(FormMessage))
+                    {
+                        <div class="alert alert-danger py-2">@FormMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (EditingEvent.Id > 0)
+                    {
+                        <button class="btn btn-outline-danger me-auto" @onclick="DeleteCurrentEvent">Удалить</button>
+                    }
+                    <button class="btn btn-secondary" @onclick="Close">Отмена</button>
+                    <button class="btn btn-primary" @onclick="SaveCurrentEvent">Сохранить в план</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        overflow-y: auto;
+    }
+</style>
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventFormModel EditingEvent { get; set; } = new();
+    [Parameter] public List<EventCategory> Categories { get; set; } = new();
+    [Parameter] public string FormMessage { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback OnDelete { get; set; }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task SaveCurrentEvent()
+    {
+        await OnSave.InvokeAsync();
+    }
+
+    private async Task DeleteCurrentEvent()
+    {
+        await OnDelete.InvokeAsync();
+    }
+
+    public class EventFormModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string Organizer { get; set; } = string.Empty;
+        public string Participants { get; set; } = string.Empty;
+        public string AdditionalInfo { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public bool IsAllDay { get; set; }
+    }
+}

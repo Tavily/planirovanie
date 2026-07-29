@@ -1,0 +1,58 @@
+﻿<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="planirovanie.styles.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Р’С…РѕРґ</title></head>
+
+<body><!--Blazor:{"type":"server","prerenderId":"16c504380e4a4f04b09ef147eccc253e","key":{"locationHash":"13CB480AAF413ED8D00378633E19989A7F68FC7297703EC3DC69E82305C19356:10","formattedComponentKey":""},"sequence":0,"descriptor":"CfDJ8Mb/YMjCk\u002BxGpTn1gqZ16ncSnkpYK8DLehATkgifKtelZZUUtVf7jsp6f6z8nmLg2vR9nK7Jtsy3SMHzXByY/KvefUgotQf1ZEz3tBJv642hSla1g6s6nxSLc7lQYFgp1nJQTT8pV6VMIqOgftTsdLncz3o2wJ0Sh6i3OgedDsglTxc5oLQI4qf9p7tYIi5YGMZWaV0sKUohBGsuNU6Y\u002BpOJZpA5QYL5S7te\u002BGbLxe5E/603BwohqHMavAPEF0Paz1lbQ8CjJI/hZgRooEmYnC\u002B0gnWEru52U7KNKnyYnXLV5GiR4zHfQgQXy2B8E4W118Dg0zdwqrfg9MUJ9rGtgXaLpDJqjDmMcTV9IfIhjbE\u002Bp1S6o01xxENK4pNUpCaWH6ZyhzFUkygHUYW5JzXEAtN6B9g4Unh\u002BDVZJsBc0W/HT62VAzZm82Ja6yPbzbEWIiPC3S0DhHUhoUweRPRqiB0wW\u002Bl1KEGk8HXMNXA8jzHcPUuUxGMUIgiYMRJnUmFzBpcxfHV3XxuoTcGP5PSkQ5mQ="}--><div class="page" b-2z8zqxra55><div class="sidebar" b-2z8zqxra55><div class="top-row ps-3 navbar navbar-dark" b-adqltlucg7><div class="container-fluid" b-adqltlucg7><a class="navbar-brand" href b-adqltlucg7>planirovanie</a></div></div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" b-adqltlucg7>
+
+<div class="nav-scrollable" onclick="document.querySelector(&#x27;.navbar-toggler&#x27;).click()" b-adqltlucg7><nav class="flex-column" b-adqltlucg7><div class="nav-item px-3" b-adqltlucg7><a href="" class="nav-link"><span class="bi bi-house-door-fill-nav-menu" aria-hidden="true" b-adqltlucg7></span> Р“Р»Р°РІРЅР°СЏ СЃС‚СЂР°РЅРёС†Р°
+            </a></div>
+         <div class="nav-item px-3" b-adqltlucg7><a href="/events" class="nav-link">
+                РљР°Р»РµРЅРґР°СЂСЊ РјРµСЂРѕРїСЂРёСЏС‚РёР№
+            </a></div></nav></div></div>
+
+    <main b-2z8zqxra55><div class="top-row px-4" b-2z8zqxra55></div>
+
+        <article class="content px-4" b-2z8zqxra55>
+
+<div class="container mt-5"><form method="post" action="/signin"><input type="hidden" name="__RequestVerificationToken" value="CfDJ8Mb_YMjCk-xGpTn1gqZ16ndbmLhGyGY-hk05OpNbI61cuYj8-iQI0m1Nwz_lIVTdrGpllXqR0XLckAaUiQ7-8TqnG3mCQT1Rf2N5z8uKaOpL1vma0KkEoaEgcFfYcVOW5x49N8V3S6ja_3ZpDlzOQNU" /><div class="text-center mb-4"><img src="logo-volgodonsk.png" class="mb-3" style="height: 120px;">
+            <h4 class="text-primary fw-bold">Р­Р»РµРєС‚СЂРѕРЅРЅР°СЏ СЃРёСЃС‚РµРјР° РїР»Р°РЅРёСЂРѕРІР°РЅРёСЏ</h4>
+            <p class="text-muted">РђРґРјРёРЅРёСЃС‚СЂР°С†РёСЏ РіРѕСЂРѕРґР° Р’РѕР»РіРѕРґРѕРЅСЃРєР°</p></div>
+
+        <div class="mb-3"><label class="form-label">Email</label>
+            <input name="Email" type="email" class="form-control" required></div>
+
+        <div class="mb-3"><label class="form-label">РџР°СЂРѕР»СЊ</label>
+            <input name="Password" type="password" class="form-control" required></div>
+
+        <button type="submit" class="btn btn-primary w-100">Р’РѕР№С‚Рё</button></form>
+    <script>
+        (function(){
+            // If token not rendered server-side, fetch it and insert into form
+            const form = document.querySelector('form[action="/signin"]');
+            if (!form) return;
+            const existing = form.querySelector('input[name="__RequestVerificationToken"]');
+            if (existing) return;
+            fetch('/antiforgery-token').then(r=>r.json()).then(j=>{
+                if (j && j.token) {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden'; inp.name = '__RequestVerificationToken'; inp.value = j.token;
+                    form.prepend(inp);
+                }
+            }).catch(()=>{});
+        })();
+    </script></div></article></main></div>
+
+<div id="blazor-error-ui" b-2z8zqxra55>
+    An unhandled error has occurred.
+    <a href class="reload" b-2z8zqxra55>Reload</a>
+    <a class="dismiss" b-2z8zqxra55>рџ—™</a></div>
+        <!--Blazor:{"prerenderId":"16c504380e4a4f04b09ef147eccc253e"}-->
+    <script src="_framework/blazor.web.js"></script></body></html><!--Blazor-Server-Component-State:CfDJ8Mb/YMjCk+xGpTn1gqZ16neqRtU2aKAzBwilFQo0LM37gvE0ab90Np+pjau/uJRbvWeXRaX9Qgf3vyXnHfrokVAo9F947Wmi5rh3N9r50nvk81Yerm/GBF5QI3pwjQ4Yvcrg/l+YEYRJ3AvAuqaEHEgNOrfnFqSnanhtLuHjGyMyS6udPkHTeFUiEpOOTZP4hhTZuNONm0Cz4fdzsEQpAHaBnnZueBBvZj8DpAc/DZotVt5LP1/9GJHCrGzuHvqb2pJ8puNzVAWLea6+ob3ScTik3CwQKlQdP7CdsMQGHi8fAndx76wHFKi99588sGW+ZHhM1EZAYaq5SQNpf9PcT4lEqFz3DlPQMb78lP4C1ZJJFl2evRxAzomolg8eFuTfu4DJ6gk1t6QK66pEAZQ098k0BmQzI+xPI0vJAuEyLm64VAnGG6k/zd+ta4JrE4Rz7kqSkySZ5+etsM+Dw5x3fAbaQAjXg7s476Cgn3H5Ae2YAgrZ2OcFVE+ThR+qUgp2D8PvEwMTCdg83+ZP8PjjiaCRERUfUoAISZBzmrAJGPTe-->

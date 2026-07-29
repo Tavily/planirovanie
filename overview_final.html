@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="planirovanie.styles.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Календарь мероприятий</title></head>
+
+<body><!--Blazor:{"type":"server","prerenderId":"ff08d8b9875248a5bea57abe9a2ce030","key":{"locationHash":"13CB480AAF413ED8D00378633E19989A7F68FC7297703EC3DC69E82305C19356:10","formattedComponentKey":""},"sequence":0,"descriptor":"CfDJ8Mb/YMjCk\u002BxGpTn1gqZ16nc5wuGWZZm46AqLa0gd\u002BlDTWAHRazrtK4I9y0ehJ7D/WR\u002BH4pJBGSoDAs2thYFZqE5g0ALZ\u002Bb9X6INYXIfo6EuzhI0EEtiANMGW9Z7A4JXomko\u002BwqTHEU4g6HVreLcs11HouKvj6VWRZ3Tlmhgp6mvTApZUO/ow7Y36xmAZqi4V/fPJ0XbdND1jCeknC6oufcLBfOgWxc5lqXLD1XEcnpTrMejR44uOBsFye1BVf8OFqmsBMj2wO8UnlzGijGr9v/jBo3VM1jw7Baao71nBcf\u002BM/Uw69WZCTe5rQ3Cq7yBLiiS92YqE6j1swJFnivEfjzqxOLeeUQUTT\u002B5o60fg3ESw47QYGWf5ZmbnvaP0NluawJ/P05Q1J9Ky5vMvET2Degaba3gfFqSZJeDKSnT6UlO8QoYEGqRd/AUfAZjOb3wVCyV3xREbVSHfsr12Tyqv39XaL3ZK8Gm498p9j3oorB7RLHDeV6C\u002BsSo8VsnbXAgVhAUCOiQAlLhH1cwUL3rzpok="}--><div class="page" b-2z8zqxra55><div class="sidebar" b-2z8zqxra55><div class="top-row ps-3 navbar navbar-dark" b-adqltlucg7><div class="container-fluid" b-adqltlucg7><a class="navbar-brand" href b-adqltlucg7>planirovanie</a></div></div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" b-adqltlucg7>
+
+<div class="nav-scrollable" onclick="document.querySelector(&#x27;.navbar-toggler&#x27;).click()" b-adqltlucg7><nav class="flex-column" b-adqltlucg7><div class="nav-item px-3" b-adqltlucg7><a href="" class="nav-link"><span class="bi bi-house-door-fill-nav-menu" aria-hidden="true" b-adqltlucg7></span> Главная страница
+            </a></div>
+         <div class="nav-item px-3" b-adqltlucg7><a href="/events" class="nav-link active" aria-current="page">
+                Календарь мероприятий
+            </a></div></nav></div></div>
+
+    <main b-2z8zqxra55><div class="top-row px-4" b-2z8zqxra55><div class="text-end"><span class="text-muted me-2">Здравствуйте, admin@volgodonsk.local!</span>
+            <a href="/Logout" class="btn btn-sm btn-outline-danger" rel="external">Выйти</a></div></div>
+
+        <article class="content px-4" b-2z8zqxra55>
+
+<div class="container-fluid mt-4"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"><div><h2 class="mb-1">Календарь мероприятий</h2>
+            <p class="text-muted mb-0">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</p></div>
+        <div class="d-flex flex-wrap gap-2"><a href="/" class="btn btn-outline-secondary">На главную</a>
+            <button class="btn btn-primary">+ Добавить мероприятие</button></div></div>
+    
+
+    <div class="card shadow-sm"><div class="card-body"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"><div class="btn-group" role="group"><button class="btn btn-outline-dark">
+        День
+    </button>
+    <button class="btn btn-outline-dark">
+        Неделя
+    </button>
+    <button class="btn btn-dark">
+        Месяц
+    </button>
+    <button class="btn btn-outline-dark">
+        Год
+    </button></div>
+                <div class="d-flex flex-wrap gap-2 align-items-center"><span class="badge bg-info text-dark">Режим: Month</span>
+                    <select class="form-select form-select-sm" style="width: 240px;"><option value="0" selected>Все категории</option><option value="1">&#x431; &#x413;&#x417;&#x2591;&#x411;&#x412; &#x423;&#x2591;&#x2593;&#x41B; &#x410;&#x2591;</option><option value="2">&#x431; &#x413;&#x417;&#x2591;&#x411;&#x412; &#x410;&#x411;&#x415; &#x431;&#x42C;&#x428;</option><option value="3">&#x422; &#x410; &#x2593;&#x414;&#x410;&#x416; (&#x422;&#x42A;&#x431;)</option><option value="4">&#x431; &#x413;&#x417;&#x2591;&#x411;&#x412; &#x424;&#x413;&#x412;&#x2591;&#x412;&#x2593; &#x422;&#x411; &#x410;&#x411; &#x424;&#x413;&#x41B;</option></select>
+
+                    
+                    <div class="mt-2"><strong class="small">Категории (debug):</strong>
+                        <ul class="list-unstyled small mb-0" style="max-height:120px;overflow:auto;background:#fff;padding:6px;border:1px solid #e9ecef;"><li>1 — &#x431; &#x413;&#x417;&#x2591;&#x411;&#x412; &#x423;&#x2591;&#x2593;&#x41B; &#x410;&#x2591; (E2 95 A8 D0 B1 20 E2 95 A4 D0 93 E2 95 A4 D0 97 E2 95 A8 E2 96 91 E2 95 A4 D0 91 E2 95 A4 D0 92 E2 95 A8 E2 95 95 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9D 20 E2 95 A8 D0 A3 E2 95 A8 E2 95 97 E2 95 A8 E2 96 91 E2 95 A8 E2 96 93 E2 95 A4 D0 9B 20 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A4 D0 90 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A8 E2 96 91)</li><li>2 — &#x431; &#x413;&#x417;&#x2591;&#x411;&#x412; &#x410;&#x411;&#x415; &#x431;&#x42C;&#x428; (E2 95 A8 D0 B1 20 E2 95 A4 D0 93 E2 95 A4 D0 97 E2 95 A8 E2 96 91 E2 95 A4 D0 91 E2 95 A4 D0 92 E2 95 A8 E2 95 95 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9D 20 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A4 D0 90 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A4 D0 91 E2 95 A8 E2 95 91 E2 95 A8 E2 95 95 E2 95 A4 D0 95 20 E2 95 A8 D0 B1 E2 95 A8 D0 AC E2 95 A8 D0 A8)</li><li>3 — &#x422; &#x410; &#x2593;&#x414;&#x410;&#x416; (&#x422;&#x42A;&#x431;) (E2 95 A8 D0 A2 20 E2 95 A4 D0 90 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 A2 E2 95 A8 E2 95 95 E2 95 A8 E2 95 9D E2 95 A8 E2 95 A1 20 E2 95 A8 E2 96 93 E2 95 A8 E2 95 95 E2 95 A8 E2 94 A4 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9B E2 95 A8 E2 95 91 E2 95 A8 E2 95 9B E2 95 A8 E2 95 9C E2 95 A4 D0 94 E2 95 A8 E2 95 A1 E2 95 A4 D0 90 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9C E2 95 A4 D0 96 E2 95 A8 E2 95 95 E2 95 A8 E2 95 95 20 28 E2 95 A8 D0 A2 E2 95 A8 D0 AA E2 95 A8 D0 B1 29)</li><li>4 — &#x431; &#x413;&#x417;&#x2591;&#x411;&#x412; &#x424;&#x413;&#x412;&#x2591;&#x412;&#x2593; &#x422;&#x411; &#x410;&#x411; &#x424;&#x413;&#x41B; (E2 95 A8 D0 B1 20 E2 95 A4 D0 93 E2 95 A4 D0 97 E2 95 A8 E2 96 91 E2 95 A4 D0 91 E2 95 A4 D0 92 E2 95 A8 E2 95 95 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9D 20 E2 95 A8 D0 A4 E2 95 A8 E2 95 A1 E2 95 A8 E2 94 90 E2 95 A4 D0 93 E2 95 A4 D0 92 E2 95 A8 E2 96 91 E2 95 A4 D0 92 E2 95 A8 E2 95 9B E2 95 A8 E2 96 93 20 E2 95 A8 D0 A2 E2 95 A8 E2 95 9B E2 95 A8 E2 95 97 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A8 E2 95 9B E2 95 A8 E2 95 9C E2 95 A4 D0 91 E2 95 A8 E2 95 91 E2 95 A8 E2 95 9B E2 95 A8 E2 95 A3 20 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A4 D0 90 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A4 D0 91 E2 95 A8 E2 95 91 E2 95 A8 E2 95 9B E2 95 A8 E2 95 A3 20 E2 95 A8 D0 A4 E2 95 A4 D0 93 E2 95 A8 E2 95 9D E2 95 A4 D0 9B)</li></ul></div>
+                    <button class="btn btn-outline-secondary btn-sm">←</button>
+                    <strong class="mx-2 text-capitalize">&#x438;&#x44E;&#x43B;&#x44C; 2026</strong>
+                    <button class="btn btn-outline-secondary btn-sm">→</button></div></div><div class="calendar-grid month-view"><div class="calendar-cell muted " role="button"><div class="day-header"><span class="day-number">29</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell muted " role="button"><div class="day-header"><span class="day-number">30</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">1</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">2</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">3</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">4</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">5</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">6</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">7</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">8</span></div>
+                            <div class="day-events"><div class="event-pill" style="border-left: 6px solid #6c757d;" __internal_stopPropagation_onclick>12</div><div class="event-pill" style="border-left: 6px solid #6c757d;" __internal_stopPropagation_onclick>1</div></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">9</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">10</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">11</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">12</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">13</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">14</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">15</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">16</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">17</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">18</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">19</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">20</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">21</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">22</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">23</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">24</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">25</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">26</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">27</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">28</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">29</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">30</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">31</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell muted holiday" role="button"><div class="day-header"><span class="day-number">1</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell muted holiday" role="button"><div class="day-header"><span class="day-number">2</span></div>
+                            <div class="day-events"></div></div></div></div></div></div><style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(140px, 1fr));
+        gap: 8px;
+    }
+
+    .calendar-cell {
+        min-height: 130px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px;
+        background: white;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+    }
+
+    .calendar-cell:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .calendar-cell.muted {
+        background: #f8fafc;
+        color: #94a3b8;
+        opacity: 0.7;
+    }
+
+    .calendar-cell.holiday {
+        background: #fff7ed;
+        border-color: #fdba74;
+    }
+
+    .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+
+    .day-number {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .day-events {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .event-pill {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 4px 6px;
+        background: #f8fafc;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        color: inherit;
+    }
+
+    .event-pill:hover {
+        background: #e2e8f0;
+    }
+
+    .week-cell {
+        vertical-align: top;
+    }
+
+    .schedule-board {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .schedule-row {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .schedule-time {
+        font-weight: 600;
+        color: #475569;
+        padding-top: 10px;
+    }
+
+    .schedule-track {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 44px;
+        border: 1px dashed #e2e8f0;
+        border-radius: 8px;
+        padding: 8px;
+        background: #f8fafc;
+    }
+
+    .schedule-event {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        background: white;
+        text-align: left;
+        min-width: 250px;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .schedule-event:hover {
+        background: #f1f5f9;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        overflow-y: auto;
+    }
+</style></article></main></div>
+
+<div id="blazor-error-ui" b-2z8zqxra55>
+    An unhandled error has occurred.
+    <a href class="reload" b-2z8zqxra55>Reload</a>
+    <a class="dismiss" b-2z8zqxra55>🗙</a></div>
+        <!--Blazor:{"prerenderId":"ff08d8b9875248a5bea57abe9a2ce030"}-->
+    <script src="_framework/blazor.web.js"></script></body></html><!--Blazor-Server-Component-State:CfDJ8Mb/YMjCk+xGpTn1gqZ16ne4S/Tp9JUiO0LFEQRYYuer3qxMPzTwb2EU9PfbByI7rlYfparmOUYK+mMAJ1zPMaFq9zzgAtxqkHcV+X47UFa0J3zt6R0sl4IFtghJCn2SzQvxixqoc6pZdIuocjm0NRwKOw1C5UWPcyGS3s+SEi0wDI4AumfZbezEWrabDl5UhvHvjK3b5MIiPQ3fyK93rHwJHTPix0SlxtAirSUZjGzUM7v5ZXBLNF94xRC5ZgpXBiiSsfi7ZFiUsLoIdO8c/X7Zz3EPV6+yWfAimfbotg4SSTPJOOR21OS37l94c2c/b1ITg8o7X1J8skVqCvFR0bZRLt8fVe8fT23v22wJ4FRgQBBOLUWCo1QTWs3a4HDtV5pdQAL8CyOFfjr4oa/dwwdUkI4in5ejwu4aQ7nOLtmjf3tJ98po/lANnyT3gIgNY10QSPoPKsgvz9xdT/Nxxmm6SteZRpGFSaIckzCZ5bbFFANARR+5ysi+3HZ9yJnqSXapF+rEVlmkwslwIRfBxFu8ZSuOCgVkHFJwkRLVE1W9Jknau8z58sy5GNuHDzJ6aBTNBeBRIyNFCJdqZZvu8ZGanQKxEKyE6Daqe2OiKFMq-->

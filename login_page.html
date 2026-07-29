@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="planirovanie.styles.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Вход</title></head>
+
+<body><!--Blazor:{"type":"server","prerenderId":"3d447b82950943da8dda1aaf075dbccb","key":{"locationHash":"13CB480AAF413ED8D00378633E19989A7F68FC7297703EC3DC69E82305C19356:10","formattedComponentKey":""},"sequence":0,"descriptor":"CfDJ8Mb/YMjCk\u002BxGpTn1gqZ16ndrmVeRt7p2Nr9iFWls8xV/8VduVju44M6xyopI7rRT4/sthvHk4kgBeHAg1m/b4o1Ub4wjef3wTp99KHH4v\u002BnWJpMgl/hNFu6HQAbKGYFDiQKhla5lPVNgljVr88pYnDdqV7hwG8zYuUyXeb7eTuveboQoGAHA82mMapkJEhR\u002BIzhiPZH8pdXt5f9TWl4k5sfBSK0BiJ/oGnnDe8ozWMU7Tbd\u002Bb\u002BbyH\u002BSrXEny5oJ1GhrZBEq86pWKLW33n3PzkexUquPkl22tdAzeoqG7VVlE2jNSNeirtSqlcGY6PCdJpJEacOcgcbJhpRcljKVFiYz0nnazZMS7z6nwaPn2pHRxJ9MIuRnAcR82rr9TYZ9jvq9gAzpxuefgQLlTNpQHhlXk7nk\u002BjZhhuygOaQ8WLCCCahMMfx2KpcLw0U7c\u002B5lG/JpVdJKCN5UVdNHiY1tSd9qhXHPrBU1vaT/QDaGY2MvcJKBcBCyBPGtTg9DvVXxB/EN/AuXxPowSgvCQmlvcOq8="}--><div class="page" b-2z8zqxra55><div class="sidebar" b-2z8zqxra55><div class="top-row ps-3 navbar navbar-dark" b-adqltlucg7><div class="container-fluid" b-adqltlucg7><a class="navbar-brand" href b-adqltlucg7>planirovanie</a></div></div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" b-adqltlucg7>
+
+<div class="nav-scrollable" onclick="document.querySelector(&#x27;.navbar-toggler&#x27;).click()" b-adqltlucg7><nav class="flex-column" b-adqltlucg7><div class="nav-item px-3" b-adqltlucg7><a href="" class="nav-link"><span class="bi bi-house-door-fill-nav-menu" aria-hidden="true" b-adqltlucg7></span> Главная страница
+            </a></div>
+         <div class="nav-item px-3" b-adqltlucg7><a href="/events" class="nav-link">
+                Календарь мероприятий
+            </a></div></nav></div></div>
+
+    <main b-2z8zqxra55><div class="top-row px-4" b-2z8zqxra55></div>
+
+        <article class="content px-4" b-2z8zqxra55>
+
+<div class="container mt-5"><form method="post" action="/signin"><input type="hidden" name="__RequestVerificationToken" value="CfDJ8Mb_YMjCk-xGpTn1gqZ16nehKokP4CJU7unoftrNJTDO_OmVZSLslovQY_NtaX-gTACFCpiT7qwVvkYfHqPze6pq-1cCb9ox8Q639Fmneqzd_HEf0eD1YZ-JCbCIWJ7CuQCdEZERB1mmmB5Sj5ySoOM" /><div class="text-center mb-4"><img src="logo-volgodonsk.png" class="mb-3" style="height: 120px;">
+            <h4 class="text-primary fw-bold">Электронная система планирования</h4>
+            <p class="text-muted">Администрация города Волгодонска</p></div>
+
+        <div class="mb-3"><label class="form-label">Email</label>
+            <input name="Email" type="email" class="form-control" required></div>
+
+        <div class="mb-3"><label class="form-label">Пароль</label>
+            <input name="Password" type="password" class="form-control" required></div>
+
+        <button type="submit" class="btn btn-primary w-100">Войти</button></form>
+    <script>
+        (function(){
+            // If token not rendered server-side, fetch it and insert into form
+            const form = document.querySelector('form[action="/signin"]');
+            if (!form) return;
+            const existing = form.querySelector('input[name="__RequestVerificationToken"]');
+            if (existing) return;
+            fetch('/antiforgery-token').then(r=>r.json()).then(j=>{
+                if (j && j.token) {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden'; inp.name = '__RequestVerificationToken'; inp.value = j.token;
+                    form.prepend(inp);
+                }
+            }).catch(()=>{});
+        })();
+    </script></div></article></main></div>
+
+<div id="blazor-error-ui" b-2z8zqxra55>
+    An unhandled error has occurr

@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="/">
+    <link rel="stylesheet" href="bootstrap/bootstrap.min.css">
+    <link rel="stylesheet" href="app.css">
+    <link rel="stylesheet" href="planirovanie.styles.css">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <title>Календарь мероприятий</title></head>
+
+<body><!--Blazor:{"type":"server","prerenderId":"289b128340384628a18371dfb850c6e2","key":{"locationHash":"13CB480AAF413ED8D00378633E19989A7F68FC7297703EC3DC69E82305C19356:10","formattedComponentKey":""},"sequence":0,"descriptor":"CfDJ8Mb/YMjCk\u002BxGpTn1gqZ16ndaodSa91XZf1rsAYMbqyUimCnSmAUe5pNjdL4O9plYz3XCgvMAvjVkx869jcLr8cJXngW5fSrb3etkW0DAaABUPsgX245kCVYQWZYqTbMp/Ber0VF9s0Z8zxXMPfRPo//nFsAmd\u002BQTjAN8n8uEe23SQtVhmyjwblldwRdDLx53ks2Soqf29y1X\u002BmkCH6d/GTFhvPHdSWVlATmYIapPLW2oVTfMbOfyFrofBPw4Zu4oW3COOaVzUt6rcChBJHHQoT144JORrXnkQlSwO57IyKEXNCz0sFYcx1mxvyh56mIAHoc\u002BT18Szl6NBXFbiqb4UC8aZKJ3PcouazQNL2skrA3zVL4kw6vuvQ0Dj2N3Fa3JjlDM0jhiqq/BSSVZw51PrP\u002BlpzdUVNHeMdhm1kWRx\u002BVdVFuxqvmjxTbpAJHYN0oiSZkWYcxiHUuHkPz3\u002B0Y6xLxMRi5ya\u002B9um0zSI8o0lngDFumMuIYXmovsKdRHF4dyVxJwDQS0aVdt29Gc8p6ld5I="}--><div class="page" b-2z8zqxra55><div class="sidebar" b-2z8zqxra55><div class="top-row ps-3 navbar navbar-dark" b-adqltlucg7><div class="container-fluid" b-adqltlucg7><a class="navbar-brand" href b-adqltlucg7>planirovanie</a></div></div>
+
+<input type="checkbox" title="Navigation menu" class="navbar-toggler" b-adqltlucg7>
+
+<div class="nav-scrollable" onclick="document.querySelector(&#x27;.navbar-toggler&#x27;).click()" b-adqltlucg7><nav class="flex-column" b-adqltlucg7><div class="nav-item px-3" b-adqltlucg7><a href="" class="nav-link"><span class="bi bi-house-door-fill-nav-menu" aria-hidden="true" b-adqltlucg7></span> Главная страница
+            </a></div>
+         <div class="nav-item px-3" b-adqltlucg7><a href="/events" class="nav-link active" aria-current="page">
+                Календарь мероприятий
+            </a></div></nav></div></div>
+
+    <main b-2z8zqxra55><div class="top-row px-4" b-2z8zqxra55><div class="text-end"><span class="text-muted me-2">Здравствуйте, admin@volgodonsk.local!</span>
+            <a href="/Logout" class="btn btn-sm btn-outline-danger" rel="external">Выйти</a></div></div>
+
+        <article class="content px-4" b-2z8zqxra55>
+
+<div class="container-fluid mt-4"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"><div><h2 class="mb-1">Календарь мероприятий</h2>
+            <p class="text-muted mb-0">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</p></div>
+        <div class="d-flex flex-wrap gap-2"><a href="/" class="btn btn-outline-secondary">На главную</a>
+            <button class="btn btn-primary">+ Добавить мероприятие</button></div></div>
+    
+
+    <div class="card shadow-sm"><div class="card-body"><div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3"><div class="btn-group" role="group"><button class="btn btn-outline-dark">
+        День
+    </button>
+    <button class="btn btn-outline-dark">
+        Неделя
+    </button>
+    <button class="btn btn-dark">
+        Месяц
+    </button>
+    <button class="btn btn-outline-dark">
+        Год
+    </button></div>
+                <div class="d-flex flex-wrap gap-2 align-items-center"><span class="badge bg-info text-dark">Режим: Month</span>
+                    <select class="form-select form-select-sm" style="width: 240px;"><option value="0" selected>Все категории</option><option value="1">&#x2568;&#x431; &#x2564;&#x413;&#x2564;&#x417;&#x2568;&#x2591;&#x2564;&#x411;&#x2564;&#x412;&#x2568;&#x2555;&#x2568;&#x2561;&#x2568;&#x255D; &#x2568;&#x423;&#x2568;&#x2557;&#x2568;&#x2591;&#x2568;&#x2593;&#x2564;&#x41B; &#x2568;&#x2502;&#x2568;&#x255B;&#x2564;&#x410;&#x2568;&#x255B;&#x2568;&#x2524;&#x2568;&#x2591;</option><option value="2">&#x2568;&#x431; &#x2564;&#x413;&#x2564;&#x417;&#x2568;&#x2591;&#x2564;&#x411;&#x2564;&#x412;&#x2568;&#x2555;&#x2568;&#x2561;&#x2568;&#x255D; &#x2568;&#x2502;&#x2568;&#x255B;&#x2564;&#x410;&#x2568;&#x255B;&#x2568;&#x2524;&#x2564;&#x411;&#x2568;&#x2551;&#x2568;&#x2555;&#x2564;&#x415; &#x2568;&#x431;&#x2568;&#x42C;&#x2568;&#x428;</option><option value="3">&#x2568;&#x422; &#x2564;&#x410;&#x2568;&#x2561;&#x2568;&#x2562;&#x2568;&#x2555;&#x2568;&#x255D;&#x2568;&#x2561; &#x2568;&#x2593;&#x2568;&#x2555;&#x2568;&#x2524;&#x2568;&#x2561;&#x2568;&#x255B;&#x2568;&#x2551;&#x2568;&#x255B;&#x2568;&#x255C;&#x2564;&#x414;&#x2568;&#x2561;&#x2564;&#x410;&#x2568;&#x2561;&#x2568;&#x255C;&#x2564;&#x416;&#x2568;&#x2555;&#x2568;&#x2555; (&#x2568;&#x422;&#x2568;&#x42A;&#x2568;&#x431;)</option><option value="4">&#x2568;&#x431; &#x2564;&#x413;&#x2564;&#x417;&#x2568;&#x2591;&#x2564;&#x411;&#x2564;&#x412;&#x2568;&#x2555;&#x2568;&#x2561;&#x2568;&#x255D; &#x2568;&#x424;&#x2568;&#x2561;&#x2568;&#x2510;&#x2564;&#x413;&#x2564;&#x412;&#x2568;&#x2591;&#x2564;&#x412;&#x2568;&#x255B;&#x2568;&#x2593; &#x2568;&#x422;&#x2568;&#x255B;&#x2568;&#x2557;&#x2568;&#x2502;&#x2568;&#x255B;&#x2568;&#x2524;&#x2568;&#x255B;&#x2568;&#x255C;&#x2564;&#x411;&#x2568;&#x2551;&#x2568;&#x255B;&#x2568;&#x2563; &#x2568;&#x2502;&#x2568;&#x255B;&#x2564;&#x410;&#x2568;&#x255B;&#x2568;&#x2524;&#x2564;&#x411;&#x2568;&#x2551;&#x2568;&#x255B;&#x2568;&#x2563; &#x2568;&#x424;&#x2564;&#x413;&#x2568;&#x255D;&#x2564;&#x41B;</option></select>
+
+                    
+                    <div class="mt-2"><strong class="small">Категории (debug):</strong>
+                        <ul class="list-unstyled small mb-0" style="max-height:120px;overflow:auto;background:#fff;padding:6px;border:1px solid #e9ecef;"><li>1 — &#x2568;&#x431; &#x2564;&#x413;&#x2564;&#x417;&#x2568;&#x2591;&#x2564;&#x411;&#x2564;&#x412;&#x2568;&#x2555;&#x2568;&#x2561;&#x2568;&#x255D; &#x2568;&#x423;&#x2568;&#x2557;&#x2568;&#x2591;&#x2568;&#x2593;&#x2564;&#x41B; &#x2568;&#x2502;&#x2568;&#x255B;&#x2564;&#x410;&#x2568;&#x255B;&#x2568;&#x2524;&#x2568;&#x2591; (E2 95 A8 D0 B1 20 E2 95 A4 D0 93 E2 95 A4 D0 97 E2 95 A8 E2 96 91 E2 95 A4 D0 91 E2 95 A4 D0 92 E2 95 A8 E2 95 95 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9D 20 E2 95 A8 D0 A3 E2 95 A8 E2 95 97 E2 95 A8 E2 96 91 E2 95 A8 E2 96 93 E2 95 A4 D0 9B 20 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A4 D0 90 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A8 E2 96 91)</li><li>2 — &#x2568;&#x431; &#x2564;&#x413;&#x2564;&#x417;&#x2568;&#x2591;&#x2564;&#x411;&#x2564;&#x412;&#x2568;&#x2555;&#x2568;&#x2561;&#x2568;&#x255D; &#x2568;&#x2502;&#x2568;&#x255B;&#x2564;&#x410;&#x2568;&#x255B;&#x2568;&#x2524;&#x2564;&#x411;&#x2568;&#x2551;&#x2568;&#x2555;&#x2564;&#x415; &#x2568;&#x431;&#x2568;&#x42C;&#x2568;&#x428; (E2 95 A8 D0 B1 20 E2 95 A4 D0 93 E2 95 A4 D0 97 E2 95 A8 E2 96 91 E2 95 A4 D0 91 E2 95 A4 D0 92 E2 95 A8 E2 95 95 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9D 20 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A4 D0 90 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A4 D0 91 E2 95 A8 E2 95 91 E2 95 A8 E2 95 95 E2 95 A4 D0 95 20 E2 95 A8 D0 B1 E2 95 A8 D0 AC E2 95 A8 D0 A8)</li><li>3 — &#x2568;&#x422; &#x2564;&#x410;&#x2568;&#x2561;&#x2568;&#x2562;&#x2568;&#x2555;&#x2568;&#x255D;&#x2568;&#x2561; &#x2568;&#x2593;&#x2568;&#x2555;&#x2568;&#x2524;&#x2568;&#x2561;&#x2568;&#x255B;&#x2568;&#x2551;&#x2568;&#x255B;&#x2568;&#x255C;&#x2564;&#x414;&#x2568;&#x2561;&#x2564;&#x410;&#x2568;&#x2561;&#x2568;&#x255C;&#x2564;&#x416;&#x2568;&#x2555;&#x2568;&#x2555; (&#x2568;&#x422;&#x2568;&#x42A;&#x2568;&#x431;) (E2 95 A8 D0 A2 20 E2 95 A4 D0 90 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 A2 E2 95 A8 E2 95 95 E2 95 A8 E2 95 9D E2 95 A8 E2 95 A1 20 E2 95 A8 E2 96 93 E2 95 A8 E2 95 95 E2 95 A8 E2 94 A4 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9B E2 95 A8 E2 95 91 E2 95 A8 E2 95 9B E2 95 A8 E2 95 9C E2 95 A4 D0 94 E2 95 A8 E2 95 A1 E2 95 A4 D0 90 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9C E2 95 A4 D0 96 E2 95 A8 E2 95 95 E2 95 A8 E2 95 95 20 28 E2 95 A8 D0 A2 E2 95 A8 D0 AA E2 95 A8 D0 B1 29)</li><li>4 — &#x2568;&#x431; &#x2564;&#x413;&#x2564;&#x417;&#x2568;&#x2591;&#x2564;&#x411;&#x2564;&#x412;&#x2568;&#x2555;&#x2568;&#x2561;&#x2568;&#x255D; &#x2568;&#x424;&#x2568;&#x2561;&#x2568;&#x2510;&#x2564;&#x413;&#x2564;&#x412;&#x2568;&#x2591;&#x2564;&#x412;&#x2568;&#x255B;&#x2568;&#x2593; &#x2568;&#x422;&#x2568;&#x255B;&#x2568;&#x2557;&#x2568;&#x2502;&#x2568;&#x255B;&#x2568;&#x2524;&#x2568;&#x255B;&#x2568;&#x255C;&#x2564;&#x411;&#x2568;&#x2551;&#x2568;&#x255B;&#x2568;&#x2563; &#x2568;&#x2502;&#x2568;&#x255B;&#x2564;&#x410;&#x2568;&#x255B;&#x2568;&#x2524;&#x2564;&#x411;&#x2568;&#x2551;&#x2568;&#x255B;&#x2568;&#x2563; &#x2568;&#x424;&#x2564;&#x413;&#x2568;&#x255D;&#x2564;&#x41B; (E2 95 A8 D0 B1 20 E2 95 A4 D0 93 E2 95 A4 D0 97 E2 95 A8 E2 96 91 E2 95 A4 D0 91 E2 95 A4 D0 92 E2 95 A8 E2 95 95 E2 95 A8 E2 95 A1 E2 95 A8 E2 95 9D 20 E2 95 A8 D0 A4 E2 95 A8 E2 95 A1 E2 95 A8 E2 94 90 E2 95 A4 D0 93 E2 95 A4 D0 92 E2 95 A8 E2 96 91 E2 95 A4 D0 92 E2 95 A8 E2 95 9B E2 95 A8 E2 96 93 20 E2 95 A8 D0 A2 E2 95 A8 E2 95 9B E2 95 A8 E2 95 97 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A8 E2 95 9B E2 95 A8 E2 95 9C E2 95 A4 D0 91 E2 95 A8 E2 95 91 E2 95 A8 E2 95 9B E2 95 A8 E2 95 A3 20 E2 95 A8 E2 94 82 E2 95 A8 E2 95 9B E2 95 A4 D0 90 E2 95 A8 E2 95 9B E2 95 A8 E2 94 A4 E2 95 A4 D0 91 E2 95 A8 E2 95 91 E2 95 A8 E2 95 9B E2 95 A8 E2 95 A3 20 E2 95 A8 D0 A4 E2 95 A4 D0 93 E2 95 A8 E2 95 9D E2 95 A4 D0 9B)</li></ul></div>
+                    <button class="btn btn-outline-secondary btn-sm">←</button>
+                    <strong class="mx-2 text-capitalize">&#x438;&#x44E;&#x43B;&#x44C; 2026</strong>
+                    <button class="btn btn-outline-secondary btn-sm">→</button></div></div><div class="calendar-grid month-view"><div class="calendar-cell muted " role="button"><div class="day-header"><span class="day-number">29</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell muted " role="button"><div class="day-header"><span class="day-number">30</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">1</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">2</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">3</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">4</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">5</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">6</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">7</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">8</span></div>
+                            <div class="day-events"><div class="event-pill" style="border-left: 6px solid #6c757d;" __internal_stopPropagation_onclick>12</div><div class="event-pill" style="border-left: 6px solid #6c757d;" __internal_stopPropagation_onclick>1</div></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">9</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">10</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">11</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">12</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">13</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">14</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">15</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">16</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">17</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">18</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">19</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">20</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">21</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">22</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">23</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">24</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">25</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  holiday" role="button"><div class="day-header"><span class="day-number">26</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">27</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">28</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">29</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">30</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell  " role="button"><div class="day-header"><span class="day-number">31</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell muted holiday" role="button"><div class="day-header"><span class="day-number">1</span></div>
+                            <div class="day-events"></div></div><div class="calendar-cell muted holiday" role="button"><div class="day-header"><span class="day-number">2</span></div>
+                            <div class="day-events"></div></div></div></div></div></div><style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(140px, 1fr));
+        gap: 8px;
+    }
+
+    .calendar-cell {
+        min-height: 130px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px;
+        background: white;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+    }
+
+    .calendar-cell:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .calendar-cell.muted {
+        background: #f8fafc;
+        color: #94a3b8;
+        opacity: 0.7;
+    }
+
+    .calendar-cell.holiday {
+        background: #fff7ed;
+        border-color: #fdba74;
+    }
+
+    .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+
+    .day-number {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .day-events {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .event-pill {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 4px 6px;
+        background: #f8fafc;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        color: inherit;
+    }
+
+    .event-pill:hover {
+        background: #e2e8f0;
+    }
+
+    .week-cell {
+        vertical-align: top;
+    }
+
+    .schedule-board {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .schedule-row {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .schedule-time {
+        font-weight: 600;
+        color: #475569;
+        padding-top: 10px;
+    }
+
+    .schedule-track {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 44px;
+        border: 1px dashed #e2e8f0;
+        border-radius: 8px;
+        padding: 8px;
+        background: #f8fafc;
+    }
+
+    .schedule-event {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        background: white;
+        text-align: left;
+        min-width: 250px;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .schedule-event:hover {
+        background: #f1f5f9;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        overflow-y: auto;
+    }
+</style></article></main></div>
+
+<div id="blazor-error-ui" b-2z8zqxra55>
+    An unhandled error has occurred.
+    <a href class="reload" b-2z8zqxra55>Reload</a>
+    <a class="dismiss" b-2z8zqxra55>🗙</a></div>
+        <!--Blazor:{"prerenderId":"289b128340384628a18371dfb850c6e2"}-->
+    <script src="_framework/blazor.web.js"></script></body></html><!--Blazor-Server-Component-State:CfDJ8Mb/YMjCk+xGpTn1gqZ16nevuX7uNfqdYY3RGO9MZJ0jfuU3jfYQJ3QzNye8TCtlJ5rSuNZv6WP2A3P2NfXus4YoxYHFtpltorHEnw6EvArW92la2VTNKRUUXN7Gv2Hnvk+J1/zwLv51zj+q2LsmoxCd9I4aZIz1RbzVxxdZwcz2/9zw/mofMUl/cE/7LPqD2hkuC1Tspz5GbrFedjjvjLoLDacpvf9eNF2RY010nkpp5zJ8Dp6QaPg/hqw3sCwRIJRQE08ndfncLjLI9cybEKY08u92FWUk40hHoj2h/sV8HhkFT6iuNkuA2gPl3bz2Oi1gDXbRPSnThj4Sw8X4RWNyQk4vkXT+5GAb4OZGwzAQLyBMBg5e/r/2qmbxfpoBgDOfmT0omaAdiKh0GMOYZiKyjZKnJsyd0YmS112q8lpNjMG/WvHsY9f/0gQlmKsUtaPVNR/42U2G+Wv6Akj3gXLjzGu0/XleLh5UD7yJboOsbHjuXhx03BPZgzFRLMEc/K2DdlOR6equN3Uax4q6LQJNeyXxgnvwapPYSEHw418g6dxYL9gCQE0dNA5zmjiGNx4aPRVJGbk2adeRVrBl+AtCcKwe45eH4ik6nWW5ImXU-->
