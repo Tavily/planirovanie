@@ -1,0 +1,794 @@
+﻿@page "/scheduler/overview"
+@page "/events"
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using planirovanie.Models
+@using planirovanie.Services
+@inject EventService EventService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize]
+
+<PageTitle>Календарь мероприятий</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h2 class="mb-1">Календарь мероприятий</h2>
+            <p class="text-muted mb-0">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="/" class="btn btn-outline-secondary">На главную</a>
+            <button class="btn btn-primary" @onclick="OpenCreateDialog">+ Добавить мероприятие</button>
+        </div>
+    </div>
+    
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div class="btn-group" role="group">
+    <button class="btn @(CurrentView == CalendarView.Day ? "btn-dark" : "btn-outline-dark")" 
+            @onclick="() => SwitchView(CalendarView.Day)">
+        День
+    </button>
+    <button class="btn @(CurrentView == CalendarView.Week ? "btn-dark" : "btn-outline-dark")" 
+            @onclick="() => SwitchView(CalendarView.Week)">
+        Неделя
+    </button>
+    <button class="btn @(CurrentView == CalendarView.Month ? "btn-dark" : "btn-outline-dark")" 
+            @onclick="() => SwitchView(CalendarView.Month)">
+        Месяц
+    </button>
+    <button class="btn @(CurrentView == CalendarView.Year ? "btn-dark" : "btn-outline-dark")" 
+            @onclick="() => SwitchView(CalendarView.Year)">
+        Год
+    </button>
+</div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <select class="form-select form-select-sm" style="width: 240px;" @onchange="OnCategoryFilterChanged">
+                        <option value="0" selected="@(SelectedCategoryFilter == 0)">Все категории</option>
+                        @foreach (var category in Categories)
+                        {
+                            <option value="@category.Id" selected="@(SelectedCategoryFilter == category.Id)">@category.Name</option>
+                        }
+                    </select>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousPeriod">←</button>
+                    <strong class="mx-2 text-capitalize">@GetPeriodLabel()</strong>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="NextPeriod">→</button>
+                </div>
+            </div>
+
+            @if (CurrentView == CalendarView.Month)
+            {
+                <div class="calendar-grid month-view">
+                    @foreach (var day in GetMonthDays())
+                    {
+                        <!-- ИСПРАВЛЕНИЕ 1: Заменяем <button> на <div role="button"> для корректной работы вложенных кликов -->
+                        <div class="calendar-cell @(day.Month != CurrentDate.Month ? "muted" : string.Empty) @(IsHoliday(day) ? "holiday" : string.Empty)"
+                             role="button"
+                             @onclick="() => OpenDayView(day)">
+                            <div class="day-header">
+                                <span class="day-number">@day.Day</span>
+                                @if (IsPreHoliday(day))
+                                {
+                                    <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">предпраздник</span>
+                                }
+                            </div>
+                            <div class="day-events">
+                                @foreach (var evt in GetEventsForDay(day).Take(3))
+                                {
+                                    <!-- ИСПРАВЛЕНИЕ 2: div вместо span для корректного stopPropagation -->
+                                    <div class="event-pill" style="border-left: 6px solid @GetCategoryColor(evt.CategoryId);"
+                                         @onclick:stopPropagation="true"
+                                         @onclick="() => OpenEditDialog(evt)">
+                                        @evt.Title
+                                    </div>
+                                }
+                                @if (GetEventsForDay(day).Count > 3)
+                                {
+                                    <div class="text-muted small text-center">+@(GetEventsForDay(day).Count - 3) ещё</div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else if (CurrentView == CalendarView.Week)
+            {
+                <div class="week-view table-responsive">
+                    <table class="table table-bordered align-middle text-center">
+                        <thead>
+                            <tr>
+                                <th style="width: 80px;">Время</th>
+                                @foreach (var day in GetWeekDays())
+                                {
+                                    <th class="@(IsHoliday(day) ? "table-warning" : string.Empty)">
+                                        <button class="btn btn-link p-0 text-start fw-bold text-decoration-none text-dark" @onclick="() => OpenDayView(day)">
+                                            @day.ToString("ddd, dd", new CultureInfo("ru-RU"))
+                                        </button>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @for (var hour = 8; hour <= 18; hour++)
+                            {
+                                <tr>
+                                    <td class="fw-bold text-muted">@hour:00</td>
+                                    @foreach (var day in GetWeekDays())
+                                    {
+                                        <!-- ИСПРАВЛЕНИЕ 3: Корректная фильтрация событий, начинающихся в этот час -->
+                                        var dayEvents = GetEventsForDay(day).Where(e => e.StartDate.Date == day.Date && e.StartDate.Hour == hour).ToList();
+                                        <td class="week-cell p-1" style="min-width: 150px;">
+                                            @foreach (var evt in dayEvents)
+                                            {
+                                                <button type="button" class="event-pill w-100 text-start" style="border-left: 4px solid @GetCategoryColor(evt.CategoryId);"
+                                                        @onclick:stopPropagation="true"
+                                                        @onclick="() => OpenEditDialog(evt)">
+                                                    <small class="fw-bold d-block text-truncate">@evt.Title</small>
+                                                    <small class="text-muted">@evt.StartDate.ToString("HH:mm")</small>
+                                                </button>
+                                            }
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else if (CurrentView == CalendarView.Day)
+            {
+                <div class="day-view">
+                    <div class="alert alert-light border d-flex justify-content-between align-items-center">
+                        <strong class="text-capitalize">@CurrentDate.ToString("dddd, dd MMMM yyyy", new CultureInfo("ru-RU"))</strong>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary" @onclick="() => OpenDayView(CurrentDate.AddDays(-1))">← Вчера</button>
+                            <button class="btn btn-outline-secondary" @onclick="() => OpenDayView(CurrentDate.AddDays(1))">Завтра →</button>
+                        </div>
+                    </div>
+                    <div class="schedule-board">
+                        @for (var hour = 8; hour <= 18; hour++)
+                        {
+                            var hourEvents = VisibleEvents.Where(e => e.StartDate.Date == CurrentDate.Date && e.StartDate.Hour == hour).ToList();
+                            <div class="schedule-row">
+                                <div class="schedule-time">@hour:00</div>
+                                <div class="schedule-track">
+                                    @if (!hourEvents.Any())
+                                    {
+                                        <div class="text-muted small fst-italic ps-2 align-self-center">Нет мероприятий</div>
+                                    }
+                                    @foreach (var evt in hourEvents)
+                                    {
+                                        <button type="button" class="schedule-event" style="border-left: 6px solid @GetCategoryColor(evt.CategoryId);"
+                                                @onclick="() => OpenEditDialog(evt)">
+                                            <div class="fw-bold">@evt.Title</div>
+                                            <div class="small text-muted">@evt.StartDate.ToString("HH:mm") — @evt.EndDate?.ToString("HH:mm")</div>
+                                            @if (!string.IsNullOrEmpty(evt.Location))
+                                            {
+                                                <div class="small text-muted">📍 @evt.Location</div>
+                                            }
+                                        </button>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div class="year-view">
+                    <div class="row g-3">
+                        @for (var month = 1; month <= 12; month++)
+                        {
+                            var monthDate = new DateTime(CurrentDate.Year, month, 1);
+                            var monthEvents = VisibleEvents.Where(e => e.StartDate.Month == month && e.StartDate.Year == CurrentDate.Year).ToList();
+                            <div class="col-md-3 col-sm-6">
+                                <div class="border rounded p-3 h-100 shadow-sm">
+                                    <div class="fw-bold mb-2 text-capitalize">@monthDate.ToString("MMMM", new CultureInfo("ru-RU"))</div>
+                                    <div class="badge bg-light text-dark mb-2">@monthEvents.Count мероприятий</div>
+                                    @foreach (var evt in monthEvents.Take(5))
+                                    {
+                                        <div class="small mt-1 text-truncate" style="border-left: 3px solid @GetCategoryColor(evt.CategoryId); padding-left: 6px;">
+                                            @evt.Title
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно создания/редактирования -->
+@if (IsFormOpen)
+{
+    <div class="modal-backdrop show" @onclick="CloseForm"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EditingEvent.Id > 0 ? "Редактирование мероприятия" : "Новое мероприятие")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Название мероприятия *</label>
+                        <input class="form-control" @bind="EditingEvent.Title" placeholder="Согласно ТЗ" />
+                    </div>
+                    <div class="row g-2">
+    <div class="mb-3">
+    <label class="form-label">Начало</label>
+    <input class="form-control" type="datetime-local" @bind="EditingEvent.StartDate" />
+</div>
+    <div class="mb-3">
+    <label class="form-label">Окончание</label>
+    <input class="form-control" type="datetime-local" @bind="EditingEvent.EndDate" />
+</div>
+</div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Категория</label>
+                            <select class="form-select" @bind="EditingEvent.CategoryId">
+                                @foreach (var category in Categories)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Место проведения</label>
+                            <input class="form-control" @bind="EditingEvent.Location" placeholder="Например: Зал заседаний" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Организатор (Кто проводит)</label>
+                            <input class="form-control" @bind="EditingEvent.Organizer" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Участники</label>
+                            <input class="form-control" @bind="EditingEvent.Participants" placeholder="ФИО через запятую" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дополнительная информация</label>
+                        <textarea class="form-control" rows="3" @bind="EditingEvent.AdditionalInfo"></textarea>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(FormMessage))
+                    {
+                        <div class="alert alert-danger py-2">@FormMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (EditingEvent.Id > 0)
+                    {
+                        <button class="btn btn-outline-danger me-auto" @onclick="DeleteCurrentEvent">Удалить</button>
+                    }
+                    <button class="btn btn-secondary" @onclick="CloseForm">Отмена</button>
+                    <button class="btn btn-primary" @onclick="SaveEvent">Сохранить в план</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(140px, 1fr));
+        gap: 8px;
+    }
+
+    .calendar-cell {
+        min-height: 130px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px;
+        background: white;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+    }
+
+    .calendar-cell:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .calendar-cell.muted {
+        background: #f8fafc;
+        color: #94a3b8;
+        opacity: 0.7;
+    }
+
+    .calendar-cell.holiday {
+        background: #fff7ed;
+        border-color: #fdba74;
+    }
+
+    .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+
+    .day-number {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .day-events {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .event-pill {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 4px 6px;
+        background: #f8fafc;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        color: inherit;
+    }
+
+    .event-pill:hover {
+        background: #e2e8f0;
+    }
+
+    .week-cell {
+        vertical-align: top;
+    }
+
+    .schedule-board {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .schedule-row {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .schedule-time {
+        font-weight: 600;
+        color: #475569;
+        padding-top: 10px;
+    }
+
+    .schedule-track {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 44px;
+        border: 1px dashed #e2e8f0;
+        border-radius: 8px;
+        padding: 8px;
+        background: #f8fafc;
+    }
+
+    .schedule-event {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        background: white;
+        text-align: left;
+        min-width: 250px;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .schedule-event:hover {
+        background: #f1f5f9;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        overflow-y: auto;
+    }
+</style>
+
+@code {
+    
+    private enum CalendarView { Day, Week, Month, Year }
+
+    private CalendarView CurrentView { get; set; } = CalendarView.Month;
+    private DateTime CurrentDate { get; set; } = DateTime.Today;
+    private List<Event> Events { get; set; } = new();
+    private List<EventCategory> Categories { get; set; } = new();
+    private int SelectedCategoryFilter { get; set; }
+    private bool IsFormOpen { get; set; }
+    private EventFormModel EditingEvent { get; set; } = new();
+    private string FormMessage { get; set; } = string.Empty;
+    private bool ShowImportPanel { get; set; }
+
+    // Кэшированный список государственных праздников РФ
+    private HashSet<DateTime> _stateHolidays = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        InitializeHolidays();
+        await LoadCategoriesAsync();
+        await LoadEventsAsync();
+    }
+    private void OnStartDateChanged(ChangeEventArgs e)
+{
+    if (DateTime.TryParse(e.Value?.ToString(), out var date))
+    {
+        EditingEvent.StartDate = date;
+    }
+}
+
+private void OnEndDateChanged(ChangeEventArgs e)
+{
+    if (DateTime.TryParse(e.Value?.ToString(), out var date))
+    {
+        EditingEvent.EndDate = date;
+    }
+}
+
+    private void InitializeHolidays()
+    {
+        _stateHolidays.Clear();
+        // Генерируем праздники для текущего, предыдущего и следующего года
+        for (int year = CurrentDate.Year - 1; year <= CurrentDate.Year + 1; year++)
+        {
+            _stateHolidays.Add(new DateTime(year, 1, 1)); // Новогодние каникулы
+            _stateHolidays.Add(new DateTime(year, 1, 7)); // Рождество
+            _stateHolidays.Add(new DateTime(year, 2, 23)); // День защитника Отечества
+            _stateHolidays.Add(new DateTime(year, 3, 8));  // Международный женский день
+            _stateHolidays.Add(new DateTime(year, 5, 1));  // Праздник Весны и Труда
+            _stateHolidays.Add(new DateTime(year, 5, 9));  // День Победы
+            _stateHolidays.Add(new DateTime(year, 6, 12)); // День России
+            _stateHolidays.Add(new DateTime(year, 11, 4)); // День народного единства
+        }
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        Categories = await EventService.GetCategoriesAsync();
+        if (Categories.Count > 0 && EditingEvent.CategoryId == 0)
+        {
+            EditingEvent.CategoryId = Categories[0].Id;
+        }
+    }
+
+    private async Task LoadEventsAsync()
+    {
+        try
+        {
+            var start = GetVisibleStart();
+            var end = GetVisibleEnd();
+            Events = await EventService.GetEventsByDateRangeAsync(start, end);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"LoadEventsAsync failed: {ex}");
+            Events = new List<Event>();
+        }
+    }
+
+    private async Task PreviousPeriod()
+    {
+        CurrentDate = CurrentView switch
+        {
+            CalendarView.Day => CurrentDate.AddDays(-1),
+            CalendarView.Week => CurrentDate.AddDays(-7),
+            CalendarView.Month => CurrentDate.AddMonths(-1),
+            CalendarView.Year => CurrentDate.AddYears(-1),
+            _ => CurrentDate
+        };
+        await LoadEventsAsync();
+    }
+
+    private async Task NextPeriod()
+    {
+        CurrentDate = CurrentView switch
+        {
+            CalendarView.Day => CurrentDate.AddDays(1),
+            CalendarView.Week => CurrentDate.AddDays(7),
+            CalendarView.Month => CurrentDate.AddMonths(1),
+            CalendarView.Year => CurrentDate.AddYears(1),
+            _ => CurrentDate
+        };
+        await LoadEventsAsync();
+    }
+
+    private async Task SwitchView(CalendarView view)
+{
+    CurrentView = view;
+    StateHasChanged(); // Мгновенно перерисовываем интерфейс (переключаем вкладки)
+    await LoadEventsAsync(); // Затем подгружаем события для нового вида
+}
+
+    private async Task OpenDayView(DateTime day)
+    {
+        CurrentDate = day.Date;
+        CurrentView = CalendarView.Day;
+        await LoadEventsAsync();
+    }
+
+    private void OnCategoryFilterChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id))
+        {
+            SelectedCategoryFilter = id;
+            StateHasChanged(); // Принудительное обновление UI при смене фильтра
+        }
+    }
+
+    private void ToggleImportPanel()
+    {
+        ShowImportPanel = !ShowImportPanel;
+    }
+
+    private IEnumerable<Event> VisibleEvents => Events.Where(e => SelectedCategoryFilter == 0 || e.CategoryId == SelectedCategoryFilter);
+
+    private List<DateTime> GetMonthDays()
+{
+    var firstDay = new DateTime(CurrentDate.Year, CurrentDate.Month, 1);
+    // Сдвиг к понедельнику (0 = понедельник, 6 = воскресенье)
+    int daysBefore = ((int)firstDay.DayOfWeek + 6) % 7;
+    var start = firstDay.AddDays(-daysBefore);
+    
+    // Проверяем, есть ли дни текущего месяца в 6-й неделе (начинается на 35-й день)
+    // Если start.AddDays(35).Month == CurrentDate.Month, значит 6-я неделя нужна (42 дня)
+    // Иначе достаточно 5 недель (35 дней), и "хвост" следующего месяца будет скрыт
+    int totalDays = (start.AddDays(35).Month == CurrentDate.Month) ? 42 : 35;
+
+    return Enumerable.Range(0, totalDays).Select(i => start.AddDays(i)).ToList();
+}
+
+    private List<DateTime> GetWeekDays()
+    {
+        var current = CurrentDate.Date;
+        int diff = (7 + ((int)current.DayOfWeek - 1)) % 7;
+        var startOfWeek = current.AddDays(-diff);
+        return Enumerable.Range(0, 7).Select(i => startOfWeek.AddDays(i)).ToList();
+    }
+
+    private DateTime GetVisibleStart() => CurrentView switch
+{
+    CalendarView.Day => CurrentDate.Date,
+    CalendarView.Week => GetWeekDays().First(),
+    CalendarView.Month => GetMonthDays().First(), // Загружаем с реального начала сетки
+    CalendarView.Year => new DateTime(CurrentDate.Year, 1, 1),
+    _ => CurrentDate.Date
+};
+
+private DateTime GetVisibleEnd() => CurrentView switch
+{
+    CalendarView.Day => CurrentDate.Date.AddDays(1).AddTicks(-1),
+    CalendarView.Week => GetWeekDays().Last().AddDays(1).AddTicks(-1),
+    CalendarView.Month => GetMonthDays().Last().AddDays(1).AddTicks(-1), // Загружаем до реального конца сетки
+    CalendarView.Year => new DateTime(CurrentDate.Year, 12, 31),
+    _ => CurrentDate.Date
+};
+
+    private string GetViewLabel(CalendarView view) => view switch
+    {
+        CalendarView.Day => "День",
+        CalendarView.Week => "Неделя",
+        CalendarView.Month => "Месяц",
+        CalendarView.Year => "Год",
+        _ => string.Empty
+    };
+
+    private string GetPeriodLabel() => CurrentView switch
+    {
+        CalendarView.Day => CurrentDate.ToString("dd MMMM yyyy", new CultureInfo("ru-RU")),
+        CalendarView.Week => $"{GetWeekDays().First().ToString("dd MMM", new CultureInfo("ru-RU"))} — {GetWeekDays().Last().ToString("dd MMM", new CultureInfo("ru-RU"))}",
+        CalendarView.Month => CurrentDate.ToString("MMMM yyyy", new CultureInfo("ru-RU")),
+        CalendarView.Year => CurrentDate.ToString("yyyy", new CultureInfo("ru-RU")),
+        _ => string.Empty
+    };
+
+    private bool IsHoliday(DateTime day)
+    {
+        // День является выходным, если это гос. праздник ИЛИ суббота/воскресенье
+        return _stateHolidays.Contains(day.Date) || day.DayOfWeek == DayOfWeek.Saturday || day.DayOfWeek == DayOfWeek.Sunday;
+    }
+
+    private bool IsPreHoliday(DateTime day)
+    {
+        // ИСПРАВЛЕНИЕ 6: Предпраздничный день - это день ПЕРЕД ГОСУДАРСТВЕННЫМ праздником.
+        // Обычные выходные (сб/вс) не делают предыдущий день предпраздничным.
+        var nextDay = day.AddDays(1).Date;
+        bool isNextDayStateHoliday = _stateHolidays.Contains(nextDay);
+        
+        return isNextDayStateHoliday && day.DayOfWeek != DayOfWeek.Saturday && day.DayOfWeek != DayOfWeek.Sunday;
+    }
+
+    private List<Event> GetEventsForDay(DateTime day)
+{
+    // ИСПРАВЛЕНО: строгое равенство дат для однодневных мероприятий
+    return VisibleEvents.Where(e => e.StartDate.Date == day.Date).ToList();
+}
+
+    private string GetCategoryColor(int categoryId)
+{
+    var category = Categories.FirstOrDefault(c => c.Id == categoryId);
+    
+    // Попытка получить цвет через reflection или хардкод
+    if (category != null)
+    {
+        // Проверяем наличие свойства ColorCode через reflection
+        var colorProperty = category.GetType().GetProperty("ColorCode");
+        if (colorProperty != null)
+        {
+            var colorValue = colorProperty.GetValue(category) as string;
+            if (!string.IsNullOrEmpty(colorValue))
+            {
+                return colorValue;
+            }
+        }
+    }
+    
+    // Fallback на хардкод согласно ТЗ
+    return category?.Name switch
+    {
+        "С участием Главы города" => "#dc3545",
+        "С участием городских СМИ" => "#0d6efd",
+        "В режиме видеоконференции (ВКС)" => "#198754",
+        "С участием Депутатов Волгодонской городской Думы" => "#6f42c1",
+        _ => "#6c757d"
+    };
+}
+
+        private void OpenCreateDialog()
+    {
+        EditingEvent = new EventFormModel
+        {
+            StartDate = CurrentDate.Date.AddHours(9),
+            EndDate = CurrentDate.Date.AddHours(10),
+            CategoryId = Categories.FirstOrDefault()?.Id ?? 0
+        };
+        FormMessage = string.Empty;
+        IsFormOpen = true;
+    }
+
+    private void OpenEditDialog(Event evt)
+    {
+        EditingEvent = new EventFormModel
+        {
+            Id = evt.Id,
+            Title = evt.Title,
+            StartDate = evt.StartDate,
+            EndDate = evt.EndDate ?? evt.StartDate.AddHours(1),
+            Location = evt.Location,
+            Organizer = evt.Organizer,
+            Participants = evt.Participants,
+            AdditionalInfo = evt.AdditionalInfo,
+            CategoryId = evt.CategoryId
+        };
+        FormMessage = string.Empty;
+        IsFormOpen = true;
+    }
+
+    private void CloseForm()
+    {
+        IsFormOpen = false;
+        EditingEvent = new EventFormModel();
+        FormMessage = string.Empty;
+    }
+
+        private async Task SaveEvent()
+    {
+        if (string.IsNullOrWhiteSpace(EditingEvent.Title))
+        {
+            FormMessage = "Введите название мероприятия.";
+            return;
+        }
+
+        // ✅ ИСПРАВЛЕНИЕ 1: Явная проверка, что дата начала выбрана
+        if (!EditingEvent.StartDate.HasValue)
+        {
+            FormMessage = "Укажите дату и время начала мероприятия.";
+            return;
+        }
+
+        // ✅ ИСПРАВЛЕНИЕ 2: Получаем чистый DateTime через .Value
+        var start = EditingEvent.StartDate.Value; 
+        
+        // Теперь start - это обычный DateTime, и метод AddHours работает корректно
+        var end = EditingEvent.EndDate ?? start.AddHours(1); 
+
+        if (end <= start)
+        {
+            FormMessage = "Время окончания должно быть позже времени начала.";
+            return;
+        }
+
+        var entity = new Event
+        {
+            Id = EditingEvent.Id,
+            Title = EditingEvent.Title,
+            StartDate = start, // ✅ ИСПРАВЛЕНИЕ 3: Передаем уже проверенный start без .Value
+            EndDate = end,
+            Location = EditingEvent.Location,
+            Organizer = EditingEvent.Organizer,
+            Participants = EditingEvent.Participants,
+            AdditionalInfo = EditingEvent.AdditionalInfo,
+            CategoryId = EditingEvent.CategoryId
+        };
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.Identity?.Name ?? "system";
+
+        try
+        {
+            if (EditingEvent.Id > 0)
+            {
+                await EventService.UpdateEventAsync(entity, userId);
+            }
+            else
+            {
+                entity.CreatedAt = DateTime.UtcNow;
+                entity.CreatedByUserId = userId;
+                await EventService.AddEventAsync(entity, userId);
+            }
+
+            CloseForm();
+            await LoadEventsAsync();
+        }
+        catch (Exception ex)
+        {
+            FormMessage = $"Ошибка сохранения: {ex.Message}";
+        }
+    }
+
+    private async Task DeleteCurrentEvent()
+    {
+        if (EditingEvent.Id > 0)
+        {
+            await EventService.DeleteEventAsync(EditingEvent.Id);
+            CloseForm();
+            await LoadEventsAsync();
+        }
+    }
+
+    // ✅ ИСПРАВЛЕННАЯ И ПОЛНАЯ МОДЕЛЬ (добавлены отсутствующие свойства, используемые в SaveEvent)
+    public class EventFormModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string Organizer { get; set; } = string.Empty;
+        public string Participants { get; set; } = string.Empty;
+        public string AdditionalInfo { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+
+        // Используем DateTime? для прямой и безопасной привязки к <input type="datetime-local">
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+
+        public bool IsAllDay { get; set; }
+    }
+}

@@ -1,0 +1,97 @@
+@page "/login"
+@rendermode InteractiveServer
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.AspNetCore.Antiforgery
+@inject NavigationManager NavigationManager
+@inject IAntiforgery Antiforgery
+@inject IHttpContextAccessor HttpContextAccessor
+
+<PageTitle>Вход</PageTitle>
+
+<div class="container mt-5">
+    <form method="post" action="/signin">
+        @if (!string.IsNullOrEmpty(requestVerificationToken))
+        {
+            <input type="hidden" name="__RequestVerificationToken" value="@requestVerificationToken" />
+        }
+        <div class="text-center mb-4">
+            <img src="logo-volgodonsk.png" class="mb-3" style="height: 120px;" />
+            <h4 class="text-primary fw-bold">Электронная система планирования</h4>
+            <p class="text-muted">Администрация города Волгодонска</p>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input name="Email" type="email" class="form-control" required />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Пароль</label>
+            <input name="Password" type="password" class="form-control" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100">Войти</button>
+        
+        @* <div class="mb-3 form-check">
+            <input name="RememberMe" type="checkbox" class="form-check-input" />
+            <label class="form-check-label">Запомнить меня</label>
+        </div> *@
+
+    </form>
+    @* @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3 text-center" style="max-width: 200px; margin: 0 auto;">
+            @errorMessage
+        </div>
+    } *@
+    <script>
+        (function(){
+            // If token not rendered server-side, fetch it and insert into form
+            const form = document.querySelector('form[action="/signin"]');
+            if (!form) return;
+            const existing = form.querySelector('input[name="__RequestVerificationToken"]');
+            if (existing) return;
+            fetch('/antiforgery-token').then(r=>r.json()).then(j=>{
+                if (j && j.token) {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden'; inp.name = '__RequestVerificationToken'; inp.value = j.token;
+                    form.prepend(inp);
+                }
+            }).catch(()=>{});
+        })();
+    </script>
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">@errorMessage</div>
+    }
+</div>
+
+@code {
+    private string errorMessage = string.Empty;
+    private string requestVerificationToken = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        if (query.ContainsKey("error"))
+        {
+            errorMessage = "Неверный логин или пароль.";
+        }
+
+        try
+        {
+            var httpContext = HttpContextAccessor.HttpContext;
+            if (httpContext != null)
+            {
+                var tokens = Antiforgery.GetAndStoreTokens(httpContext);
+                requestVerificationToken = tokens.RequestToken ?? string.Empty;
+            }
+        }
+        catch
+        {
+            // ignore - token will be missing and form POST will fail antiforgery validation
+        }
+    }
+}

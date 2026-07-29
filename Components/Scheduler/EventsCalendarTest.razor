@@ -1,0 +1,22 @@
+﻿@page "/events-test"
+@using System.Security.Claims
+@using System.Text
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using planirovanie.Models
+@using planirovanie.Services
+@using Telerik.Blazor
+@using Telerik.Blazor.Components
+@inject EventService EventService
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize]
+
+<PageTitle>Test</PageTitle>
+
+<h3>Test component</h3>
+
+@code {
+    private string Value { get; set; } = "OK";
+}

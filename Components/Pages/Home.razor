@@ -1,0 +1,38 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@attribute [Authorize]
+
+<PageTitle>Система планирования мероприятий</PageTitle>
+
+<div class="container mt-4">
+    <h2>Электронная система планирования мероприятий</h2>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Добро пожаловать!</h5>
+                    <AuthorizeView>
+                        <Authorized>
+                            <p class="card-text">
+                                Вы вошли как: <strong>@context.User.Identity?.Name</strong>
+                            </p>
+                            <p class="card-text">
+                                Роль:
+                                @if (context.User.IsInRole("Administrator"))
+                                {
+                                    <span class="badge bg-danger">Администратор</span>
+                                }
+                                else if (context.User.IsInRole("Executor"))
+                                {
+                                    <span class="badge bg-primary">Исполнитель</span>
+                                }
+                            </p>
+                        </Authorized>
+                    </AuthorizeView>
+                    <a href="/events" class="btn btn-primary">Перейти к календарю мероприятий</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

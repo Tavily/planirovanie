@@ -1,0 +1,1 @@
+public record LoginInputModel(string Email, string Password, bool RememberMe);
