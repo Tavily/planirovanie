@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using planirovanie.Data;
 using planirovanie.Services;
 using Microsoft.AspNetCore.Antiforgery;
-using Telerik.Blazor;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -35,8 +35,6 @@ builder.Services.ConfigureApplicationCookie(options => {
 // 4. Сервисы
 builder.Services.AddScoped<EventService>();
 
-// 5. Telerik и Blazor
-builder.Services.AddTelerikBlazor();
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpContextAccessor();
