@@ -18,14 +18,15 @@ namespace planirovanie.Services
 
         public bool CanAddEvent(DateTime eventDate, string? userRole = null)
         {
-            // ПРАВИЛО ДЛЯ АДМИНИСТРАТОРА: обход всех ограничений
-            if (!string.IsNullOrEmpty(userRole) && 
-                userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
+            // ПРАВИЛО ДЛЯ РОЛЕЙ: обход всех ограничений для Администратора и Исполнителя
+            if (!string.IsNullOrEmpty(userRole) &&
+                (userRole.Equals("Administrator", StringComparison.OrdinalIgnoreCase) ||
+                 userRole.Equals("Executor", StringComparison.OrdinalIgnoreCase)))
             {
-                return true; // Администратор может вносить изменения в любое время
+                return true; // Administrator и Executor могут вносить изменения в любое время
             }
 
-            var now = DateTime.Now;
+            var now = GetMoscowNow();
             var eventDateOnly = eventDate.Date;
             var nowDateOnly = now.Date;
 
@@ -81,6 +82,20 @@ namespace planirovanie.Services
             return await _context.EventCategories.OrderBy(c => c.Id).ToListAsync();
         }
 
+        private static DateTime GetMoscowNow()
+        {
+            try
+            {
+                var tz = TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time");
+                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            }
+            catch (TimeZoneNotFoundException)
+            {
+                var tz = TimeZoneInfo.FindSystemTimeZoneById("Europe/Moscow");
+                return TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            }
+        }
+
         public async Task AddEventAsync(Event newEvent, string userId, string? userRole = null)
         {
             // Теперь передаем роль пользователя для проверки
@@ -88,7 +103,7 @@ namespace planirovanie.Services
                 throw new InvalidOperationException("Срок ввода данного плана истек согласно Регламенту Администрации города Волгодонска.");
 
             newEvent.CreatedByUserId = userId;
-            newEvent.CreatedAt = DateTime.UtcNow;
+            newEvent.CreatedAt = GetMoscowNow();
             _context.Events.Add(newEvent);
             await _context.SaveChangesAsync();
         }
@@ -114,7 +129,7 @@ namespace planirovanie.Services
             existing.Participants = updatedEvent.Participants;
             existing.AdditionalInfo = updatedEvent.AdditionalInfo;
             existing.CategoryId = updatedEvent.CategoryId;
-            existing.UpdatedAt = DateTime.UtcNow;
+            existing.UpdatedAt = GetMoscowNow();
 
             await _context.SaveChangesAsync();
         }

@@ -39,7 +39,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddHttpContextAccessor();
 
-// 6. ✅ ВАЖНО: Добавляем Razor Pages
+// 6. Добавляем Razor Pages
 builder.Services.AddRazorPages();
 
 var app = builder.Build();
@@ -62,7 +62,7 @@ using (var scope = app.Services.CreateScope())
     if (!await roleManager.RoleExistsAsync("User"))
         await roleManager.CreateAsync(new IdentityRole("User"));
 
-    // Создание администратора (остается без изменений)
+    // Создание администратора
     var adminEmail = "admin@volgodonsk.local";
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {
@@ -75,8 +75,6 @@ using (var scope = app.Services.CreateScope())
         }
     }
     
-    // ОПЦИОНАЛЬНО: Если вы хотите, чтобы при запуске сразу создавался тестовый пользователь с ролью User, 
-    // раскомментируйте блок ниже. Если нет - просто удалите его.
     
     var userEmail = "user@volgodonsk.local";
     if (await userManager.FindByEmailAsync(userEmail) == null)
