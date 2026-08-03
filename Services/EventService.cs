@@ -16,18 +16,62 @@ namespace planirovanie.Services
             _userManager = userManager;
         }
 
-        public bool CanAddEvent(DateTime eventDate)
+        public bool CanAddEvent(DateTime eventDate, string? userRole = null)
         {
-            var now = DateTime.Now;
-
-            if (now.DayOfWeek == DayOfWeek.Thursday && now.Hour >= 12)
+            // ПРАВИЛО ДЛЯ АДМИНИСТРАТОРА: обход всех ограничений
+            if (!string.IsNullOrEmpty(userRole) && 
+                userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase))
             {
-                if (eventDate <= now.AddDays(7))
+                return true; // Администратор может вносить изменения в любое время
+            }
+
+            var now = DateTime.Now;
+            var eventDateOnly = eventDate.Date;
+            var nowDateOnly = now.Date;
+
+            // Находим понедельник текущей недели
+            int daysSinceMonday = ((int)now.DayOfWeek + 6) % 7;
+            var currentMonday = nowDateOnly.AddDays(-daysSinceMonday);
+            
+            // Определяем границы "следующей недели" (пн-вс)
+            var nextMonday = currentMonday.AddDays(7);
+            var nextSunday = nextMonday.AddDays(6);
+            
+            // Дедлайн: четверг текущей недели, 12:00
+            var deadlineThursday = currentMonday.AddDays(3).AddHours(12);
+            
+            // Период действия запрета: с четверга 12:00 до конца воскресенья
+            var banLiftsAt = currentMonday.AddDays(7);
+            
+            if (now >= deadlineThursday && now < banLiftsAt)
+            {
+                if (eventDateOnly >= nextMonday && eventDateOnly <= nextSunday)
                     return false;
             }
 
-            if (eventDate.Month > now.Month && now.Day > 25)
+            // Месячные планы
+            var plannedMonthStart = new DateTime(eventDate.Year, eventDate.Month, 1);
+            var previousMonth = plannedMonthStart.AddMonths(-1);
+            
+            if (now.Year == previousMonth.Year && 
+                now.Month == previousMonth.Month && 
+                now.Day > 25)
+            {
                 return false;
+            }
+            
+            if (nowDateOnly >= plannedMonthStart)
+            {
+                return false;
+            }
+
+            // Годовые планы
+            if (eventDate.Year > now.Year)
+            {
+                var yearDeadline = new DateTime(now.Year, 12, 20, 23, 59, 59);
+                if (now > yearDeadline)
+                    return false;
+            }
 
             return true;
         }
@@ -37,10 +81,11 @@ namespace planirovanie.Services
             return await _context.EventCategories.OrderBy(c => c.Id).ToListAsync();
         }
 
-        public async Task AddEventAsync(Event newEvent, string userId)
+        public async Task AddEventAsync(Event newEvent, string userId, string? userRole = null)
         {
-            if (!CanAddEvent(newEvent.StartDate))
-                throw new InvalidOperationException("Срок ввода данного плана истек согласно Регламенту.");
+            // Теперь передаем роль пользователя для проверки
+            if (!CanAddEvent(newEvent.StartDate, userRole))
+                throw new InvalidOperationException("Срок ввода данного плана истек согласно Регламенту Администрации города Волгодонска.");
 
             newEvent.CreatedByUserId = userId;
             newEvent.CreatedAt = DateTime.UtcNow;
@@ -48,12 +93,16 @@ namespace planirovanie.Services
             await _context.SaveChangesAsync();
         }
 
-        public async Task UpdateEventAsync(Event updatedEvent, string userId)
+        public async Task UpdateEventAsync(Event updatedEvent, string userId, string? userRole = null)
         {
+            // Администратор может обновлять в любое время
+            if (!CanAddEvent(updatedEvent.StartDate, userRole))
+                throw new InvalidOperationException("Срок изменения данного плана истек согласно Регламенту.");
+
             var existing = await _context.Events.FindAsync(updatedEvent.Id);
             if (existing == null)
             {
-                await AddEventAsync(updatedEvent, userId);
+                await AddEventAsync(updatedEvent, userId, userRole);
                 return;
             }
 
@@ -65,8 +114,7 @@ namespace planirovanie.Services
             existing.Participants = updatedEvent.Participants;
             existing.AdditionalInfo = updatedEvent.AdditionalInfo;
             existing.CategoryId = updatedEvent.CategoryId;
-            existing.CreatedByUserId = userId;
-            existing.CreatedAt = existing.CreatedAt == default ? DateTime.UtcNow : existing.CreatedAt;
+            existing.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
         }

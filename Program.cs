@@ -50,11 +50,19 @@ using (var scope = app.Services.CreateScope())
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
+    // Создание роли Администратора
     if (!await roleManager.RoleExistsAsync("Administrator"))
         await roleManager.CreateAsync(new IdentityRole("Administrator"));
+
+    // Создание роли Исполнителя
     if (!await roleManager.RoleExistsAsync("Executor"))
         await roleManager.CreateAsync(new IdentityRole("Executor"));
 
+    // ДОБАВЛЕНО: Создание роли обычного пользователя (User)
+    if (!await roleManager.RoleExistsAsync("User"))
+        await roleManager.CreateAsync(new IdentityRole("User"));
+
+    // Создание администратора (остается без изменений)
     var adminEmail = "admin@volgodonsk.local";
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {
@@ -66,6 +74,22 @@ using (var scope = app.Services.CreateScope())
             Console.WriteLine("✅ Администратор создан: admin@volgodonsk.local / Admin12345!");
         }
     }
+    
+    // ОПЦИОНАЛЬНО: Если вы хотите, чтобы при запуске сразу создавался тестовый пользователь с ролью User, 
+    // раскомментируйте блок ниже. Если нет - просто удалите его.
+    
+    var userEmail = "user@volgodonsk.local";
+    if (await userManager.FindByEmailAsync(userEmail) == null)
+    {
+        var user = new IdentityUser { UserName = userEmail, Email = userEmail };
+        var result = await userManager.CreateAsync(user, "User12345!");
+        if (result.Succeeded)
+        {
+            await userManager.AddToRoleAsync(user, "User");
+            Console.WriteLine("✅ Пользователь создан: user@volgodonsk.local / User12345!");
+        }
+    }
+    
 }
 
 // 8. Middleware

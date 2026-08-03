@@ -30,6 +30,9 @@ namespace planirovanie.Models
         public string CreatedByUserId { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+        // Время последнего обновления записи. Nullable — если запись ещё не обновлялась.
+        public DateTime? UpdatedAt { get; set; }
+
         public bool IsLocked { get; set; }
     }
 
