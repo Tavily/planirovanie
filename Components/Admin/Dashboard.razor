@@ -1,0 +1,135 @@
+@page "/admin/dashboard"
+@layout AdminLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using planirovanie.Data
+@using planirovanie.Models
+@attribute [Authorize(Roles = "Administrator")]
+@inject ApplicationDbContext DbContext
+@inject UserManager<IdentityUser> UserManager
+
+<PageTitle>Админ-панель</PageTitle>
+
+<h2 class="mb-4">Панель администратора</h2>
+
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h3>@totalUsers</h3>
+                <p class="mb-0">Пользователей</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h3>@totalEvents</h3>
+                <p class="mb-0">Мероприятий</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <h3>@eventsThisWeek</h3>
+                <p class="mb-0">На этой неделе</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <h3>@pendingEvents</h3>
+                <p class="mb-0">Без отметки</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Последние изменения</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Мероприятие</th>
+                            <th>Кто изменил</th>
+                            <th>Когда</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var evt in recentEvents)
+                        {
+                            <tr>
+                                <td>@evt.Title</td>
+                                <td>@GetUserEmail(evt.CreatedByUserId)</td>
+                                <td>@evt.UpdatedAt?.ToString("dd.MM.yyyy HH:mm") ?? evt.CreatedAt.ToString("dd.MM.yyyy HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Быстрые действия</h5>
+            </div>
+            <div class="card-body">
+                <a href="/admin/users" class="btn btn-outline-primary w-100 mb-2">Управление пользователями</a>
+                <a href="/admin/categories" class="btn btn-outline-success w-100 mb-2">Управление категориями</a>
+                <a href="/admin/reports" class="btn btn-outline-info w-100 mb-2">Сформировать отчет</a>
+                <a href="/admin/logs" class="btn btn-outline-secondary w-100">Просмотр логов</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalUsers;
+    private int totalEvents;
+    private int eventsThisWeek;
+    private int pendingEvents;
+    private List<Event> recentEvents = new();
+    private Dictionary<string, string> userEmails = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        totalUsers = DbContext.Users.Count();
+        totalEvents = DbContext.Events.Count();
+        
+        var weekStart = DateTime.Today.AddDays(-(int)DateTime.Today.DayOfWeek);
+        var weekEnd = weekStart.AddDays(7);
+        eventsThisWeek = DbContext.Events.Count(e => e.StartDate >= weekStart && e.StartDate < weekEnd);
+        
+        // Мероприятия, прошедшие, но без отметки о проведении (IsLocked = false)
+        pendingEvents = DbContext.Events.Count(e => e.StartDate < DateTime.Now && !e.IsLocked);
+        
+        recentEvents = DbContext.Events
+            .OrderByDescending(e => e.UpdatedAt ?? e.CreatedAt)
+            .Take(10)
+            .ToList();
+        
+        // Загружаем email пользователей
+        foreach (var evt in recentEvents)
+        {
+            if (!userEmails.ContainsKey(evt.CreatedByUserId))
+            {
+                var user = await UserManager.FindByIdAsync(evt.CreatedByUserId);
+                userEmails[evt.CreatedByUserId] = user?.Email ?? "Неизвестно";
+            }
+        }
+    }
+
+    private string GetUserEmail(string userId)
+    {
+        return userEmails.TryGetValue(userId, out var email) ? email : "Неизвестно";
+    }
+}

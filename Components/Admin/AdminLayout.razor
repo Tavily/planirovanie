@@ -1,0 +1,80 @@
+@inherits LayoutComponentBase
+@using Microsoft.AspNetCore.Authorization
+
+<div class="admin-layout">
+    <nav class="admin-sidebar bg-dark text-white">
+        <div class="p-3">
+            <h5 class="text-white">Админ-панель</h5>
+            <small class="text-muted">Администрация Волгодонска</small>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="/admin/dashboard">
+                    <i class="bi bi-speedometer2"></i> Обзор
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="/admin/users">
+                    <i class="bi bi-people"></i> Пользователи
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="/admin/categories">
+                    <i class="bi bi-tags"></i> Категории
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="/admin/locations">
+                    <i class="bi bi-geo-alt"></i> Места проведения
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="/admin/reports">
+                    <i class="bi bi-file-earmark-bar-graph"></i> Отчеты
+                </NavLink>
+            </li>
+            <li class="nav-item">
+                <NavLink class="nav-link text-white" href="/admin/logs">
+                    <i class="bi bi-journal-text"></i> Логи изменений
+                </NavLink>
+            </li>
+        </ul>
+        <div class="mt-auto p-3 border-top">
+            <NavLink class="nav-link text-white" href="/events">
+                <i class="bi bi-arrow-left"></i> К календарю
+            </NavLink>
+        </div>
+    </nav>
+    
+    <main class="admin-content">
+        <div class="container-fluid p-4">
+            @Body
+        </div>
+    </main>
+</div>
+
+<style>
+    .admin-layout {
+        display: flex;
+        min-height: 100vh;
+    }
+    
+    .admin-sidebar {
+        width: 250px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .admin-content {
+        flex: 1;
+        background: #f8f9fa;
+    }
+    
+    .nav-link:hover {
+        background: rgba(255,255,255,0.1);
+    }
+    
+    .nav-link.active {
+        background: rgba(255,255,255,0.2);
+    }
+</style>

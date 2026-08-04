@@ -133,6 +133,8 @@ app.MapPost("/signin", async (HttpContext httpContext, SignInManager<IdentityUse
 
 // 9. ✅ ВАЖНО: Маппинг Razor Pages ДО Blazor
 app.MapRazorPages();
+app.MapGet("/admin", () => Results.Redirect("/admin/dashboard"));
+app.MapGet("/admin/", () => Results.Redirect("/admin/dashboard"));
 app.MapRazorComponents<planirovanie.App>()
     .AddInteractiveServerRenderMode();
 

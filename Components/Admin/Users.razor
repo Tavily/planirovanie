@@ -1,0 +1,248 @@
+@page "/admin/users"
+@layout AdminLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@attribute [Authorize(Roles = "Administrator")]
+@inject ApplicationDbContext DbContext
+@inject UserManager<IdentityUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+
+<PageTitle>Управление пользователями</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Управление пользователями</h2>
+    <button class="btn btn-primary" @onclick="ShowCreateDialog">
+        <i class="bi bi-plus"></i> Добавить пользователя
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-@(messageType)">@message</div>
+}
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>Email</th>
+                    <th>Роль</th>
+                    <th>Дата создания</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var user in users)
+                {
+                    <tr>
+                        <td>@user.Email</td>
+                        <td>
+                            @foreach (var role in userRoles[user.Id])
+                            {
+                                <span class="badge bg-info">@role</span>
+                            }
+                        </td>
+                        <td>—</td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => EditUser(user.Id)">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            @if (user.Email != "admin@volgodonsk.local")
+                            {
+                                <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user.Id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@if (showDialog)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(editingUserId == null ? "Новый пользователь" : "Редактирование")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseDialog"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" class="form-control" @bind="newUserEmail" />
+                    </div>
+                    @if (editingUserId == null)
+                    {
+                        <div class="mb-3">
+                            <label class="form-label">Пароль</label>
+                            <input type="password" class="form-control" @bind="newUserPassword" />
+                        </div>
+                    }
+                    <div class="mb-3">
+                        <label class="form-label">Роль</label>
+                        <select class="form-select" @bind="newUserRole">
+                            <option value="User">Исполнитель (User)</option>
+                            <option value="Executor">Ответственный (Executor)</option>
+                            <option value="Administrator">Администратор (Administrator)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CloseDialog">Отмена</button>
+                    <button class="btn btn-primary" @onclick="SaveUser">Сохранить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1040;
+    }
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        overflow-y: auto;
+    }
+</style>
+
+@code {
+    private List<IdentityUser> users = new();
+    private Dictionary<string, List<string>> userRoles = new();
+    private bool showDialog;
+    private string? editingUserId;
+    private string newUserEmail = string.Empty;
+    private string newUserPassword = string.Empty;
+    private string newUserRole = "User";
+    private string message = string.Empty;
+    private string messageType = "info";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUsersAsync();
+    }
+
+    private async Task LoadUsersAsync()
+    {
+        users = await DbContext.Users.ToListAsync();
+        userRoles.Clear();
+        
+        foreach (var user in users)
+        {
+            var roles = await UserManager.GetRolesAsync(user);
+            userRoles[user.Id] = roles.ToList();
+        }
+    }
+
+    private void ShowCreateDialog()
+    {
+        editingUserId = null;
+        newUserEmail = string.Empty;
+        newUserPassword = string.Empty;
+        newUserRole = "User";
+        showDialog = true;
+    }
+
+    private async Task EditUser(string userId)
+    {
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            editingUserId = userId;
+            newUserEmail = user.Email ?? string.Empty;
+            newUserPassword = string.Empty;
+            var roles = await UserManager.GetRolesAsync(user);
+            newUserRole = roles.FirstOrDefault() ?? "User";
+            showDialog = true;
+        }
+    }
+
+    private async Task SaveUser()
+    {
+        try
+        {
+            if (editingUserId == null)
+            {
+                // Создание нового пользователя
+                var user = new IdentityUser { UserName = newUserEmail, Email = newUserEmail };
+                var result = await UserManager.CreateAsync(user, newUserPassword);
+                
+                if (result.Succeeded)
+                {
+                    await UserManager.AddToRoleAsync(user, newUserRole);
+                    message = "Пользователь успешно создан";
+                    messageType = "success";
+                }
+                else
+                {
+                    message = string.Join(", ", result.Errors.Select(e => e.Description));
+                    messageType = "danger";
+                    return;
+                }
+            }
+            else
+            {
+                // Редактирование существующего
+                var user = await UserManager.FindByIdAsync(editingUserId);
+                if (user != null)
+                {
+                    user.Email = newUserEmail;
+                    user.UserName = newUserEmail;
+                    await UserManager.UpdateAsync(user);
+                    
+                    // Обновляем роль
+                    var currentRoles = await UserManager.GetRolesAsync(user);
+                    await UserManager.RemoveFromRolesAsync(user, currentRoles);
+                    await UserManager.AddToRoleAsync(user, newUserRole);
+                    
+                    if (!string.IsNullOrEmpty(newUserPassword))
+                    {
+                        await UserManager.RemovePasswordAsync(user);
+                        await UserManager.AddPasswordAsync(user, newUserPassword);
+                    }
+                    
+                    message = "Пользователь обновлен";
+                    messageType = "success";
+                }
+            }
+            
+            CloseDialog();
+            await LoadUsersAsync();
+        }
+        catch (Exception ex)
+        {
+            message = $"Ошибка: {ex.Message}";
+            messageType = "danger";
+        }
+    }
+
+    private async Task DeleteUser(string userId)
+    {
+        var user = await UserManager.FindByIdAsync(userId);
+        if (user != null)
+        {
+            await UserManager.DeleteAsync(user);
+            message = "Пользователь удален";
+            messageType = "success";
+            await LoadUsersAsync();
+        }
+    }
+
+    private void CloseDialog()
+    {
+        showDialog = false;
+    }
+}

@@ -1,0 +1,171 @@
+@page "/admin/categories"
+@layout AdminLayout
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@using planirovanie.Models
+@attribute [Authorize(Roles = "Administrator")]
+@inject ApplicationDbContext DbContext
+
+<PageTitle>Категории мероприятий</PageTitle>
+
+<h2 class="mb-4">Категории мероприятий</h2>
+
+@if (!string.IsNullOrEmpty(message))
+{
+    <div class="alert alert-@(messageType)">@message</div>
+}
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5 class="mb-0">Добавить новую категорию</h5>
+    </div>
+    <div class="card-body">
+        <div class="row g-3">
+            <div class="col-md-8">
+                <input type="text" class="form-control" placeholder="Название категории" @bind="newCategoryName" />
+            </div>
+            <div class="col-md-4">
+                <button class="btn btn-primary w-100" @onclick="AddCategory">Добавить</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Название</th>
+                    <th>Количество мероприятий</th>
+                    <th>Действия</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var category in categories)
+                {
+                    <tr>
+                        <td>@category.Id</td>
+                        <td>
+                            @if (editingId == category.Id)
+                            {
+                                <input type="text" class="form-control form-control-sm" @bind="editName" />
+                            }
+                            else
+                            {
+                                @category.Name
+                            }
+                        </td>
+                        <td>@GetEventCount(category.Id)</td>
+                        <td>
+                            @if (editingId == category.Id)
+                            {
+                                <button class="btn btn-sm btn-success me-1" @onclick="SaveEdit">Сохранить</button>
+                                <button class="btn btn-sm btn-secondary" @onclick="CancelEdit">Отмена</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEdit(category)">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                @if (GetEventCount(category.Id) == 0)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteCategory(category.Id)">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@code {
+    private List<EventCategory> categories = new();
+    private string newCategoryName = string.Empty;
+    private int? editingId;
+    private string editName = string.Empty;
+    private string message = string.Empty;
+    private string messageType = "info";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategoriesAsync();
+    }
+
+    private async Task LoadCategoriesAsync()
+    {
+        categories = await DbContext.EventCategories.OrderBy(c => c.Id).ToListAsync();
+    }
+
+    private int GetEventCount(int categoryId)
+    {
+        return DbContext.Events.Count(e => e.CategoryId == categoryId);
+    }
+
+    private async Task AddCategory()
+    {
+        if (string.IsNullOrWhiteSpace(newCategoryName))
+        {
+            message = "Введите название категории";
+            messageType = "warning";
+            return;
+        }
+
+        var category = new EventCategory { Name = newCategoryName };
+        DbContext.EventCategories.Add(category);
+        await DbContext.SaveChangesAsync();
+        
+        newCategoryName = string.Empty;
+        message = "Категория добавлена";
+        messageType = "success";
+        await LoadCategoriesAsync();
+    }
+
+    private void StartEdit(EventCategory category)
+    {
+        editingId = category.Id;
+        editName = category.Name;
+    }
+
+    private async Task SaveEdit()
+    {
+        if (editingId.HasValue)
+        {
+            var category = await DbContext.EventCategories.FindAsync(editingId.Value);
+            if (category != null)
+            {
+                category.Name = editName;
+                await DbContext.SaveChangesAsync();
+                message = "Категория обновлена";
+                messageType = "success";
+            }
+        }
+        CancelEdit();
+        await LoadCategoriesAsync();
+    }
+
+    private void CancelEdit()
+    {
+        editingId = null;
+        editName = string.Empty;
+    }
+
+    private async Task DeleteCategory(int id)
+    {
+        var category = await DbContext.EventCategories.FindAsync(id);
+        if (category != null)
+        {
+            DbContext.EventCategories.Remove(category);
+            await DbContext.SaveChangesAsync();
+            message = "Категория удалена";
+            messageType = "success";
+            await LoadCategoriesAsync();
+        }
+    }
+}
