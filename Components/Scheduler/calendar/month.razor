@@ -1,0 +1,268 @@
+@page "/scheduler/month/{SelectedDate:datetime}"
+@page "/scheduler/month"
+@rendermode InteractiveServer
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Authorization
+@using planirovanie.Models
+@using planirovanie.Services
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@inject planirovanie.Services.EventService EventSvc
+@inject ApplicationDbContext Db
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+@attribute [Authorize]
+@inherits CalendarViewBase
+
+<PageTitle>Календарь мероприятий - Месяц</PageTitle>
+
+<div class="container-fluid mt-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h2 class="mb-1">Календарь мероприятий</h2>
+            <p class="text-muted mb-0">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</p>
+        </div>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="/" class="btn btn-outline-secondary">На главную</a>
+            <button class="btn btn-primary" @onclick="HandleCreateEvent">+ Добавить мероприятие</button>
+        </div>
+    </div>
+    
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div class="btn-group" role="group">
+                    <a href="/scheduler/day" class="btn btn-outline-dark">День</a>
+                    <a href="/scheduler/week" class="btn btn-outline-dark">Неделя</a>
+                    <a href="/scheduler/month" class="btn btn-dark">Месяц</a>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="badge bg-info text-dark">Режим: Месяц</span>
+                    <select class="form-select form-select-sm" style="width: 240px;" value="@SelectedCategoryFilter" @onchange="OnCategoryFilterChanged">
+                        <option value="0" selected="@(SelectedCategoryFilter == 0)">Все категории</option>
+                        @foreach (var category in Categories)
+                        {
+                            <option value="@category.Id" selected="@(SelectedCategoryFilter == category.Id)">@category.Name</option>
+                        }
+                    </select>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="PreviousMonth">←</button>
+                    <strong class="mx-2 text-capitalize">@CurrentDate.ToString("MMMM yyyy", new CultureInfo("ru-RU"))</strong>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="NextMonth">→</button>
+                </div>
+            </div>
+
+            <div class="calendar-grid month-view">
+                @foreach (var day in GetMonthDays())
+                {
+                    <div class="calendar-cell @(day.Month != CurrentDate.Month ? "muted" : string.Empty) @(IsHoliday(day) ? "holiday" : string.Empty)"
+                         role="button"
+                         @onclick="() => HandleDayClick(day)">
+                        <div class="day-header">
+                            <span class="day-number">@day.Day</span>
+                            @if (IsPreHoliday(day))
+                            {
+                                <span class="badge bg-warning text-dark" style="font-size: 0.65rem;">предпраздник</span>
+                            }
+                        </div>
+                        <div class="day-events">
+                            @foreach (var evt in GetEventsForDay(day).Take(3))
+                            {
+                                <div class="event-pill" style="border-left: 6px solid @GetCategoryColor(evt.CategoryId);"
+                                     @onclick:stopPropagation="true"
+                                     @onclick="() => HandleEventClick(evt)">
+                                    @evt.Title
+                                </div>
+                            }
+                            @if (GetEventsForDay(day).Count > 3)
+                            {
+                                <div class="text-muted small text-center">+@(GetEventsForDay(day).Count - 3) ещё</div>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (IsFormOpen)
+{
+    <div class="modal-backdrop show" @onclick="CloseForm"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EditingEvent.Id > 0 ? "Редактирование мероприятия" : "Новое мероприятие")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Название мероприятия *</label>
+                        <input class="form-control" @bind="EditingEvent.Title" placeholder="Согласно ТЗ" />
+                    </div>
+                    <div class="row g-2">
+                        <div class="mb-3">
+                            <label class="form-label">Начало</label>
+                            <input class="form-control" type="datetime-local" @bind="EditingEvent.StartDate" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Окончание</label>
+                            <input class="form-control" type="datetime-local" @bind="EditingEvent.EndDate" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Категория</label>
+                            <select class="form-select" @bind="EditingEvent.CategoryId">
+                                @foreach (var category in Categories)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Место проведения</label>
+                            <input class="form-control" @bind="EditingEvent.Location" placeholder="Например: Зал заседаний" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Организатор (Кто проводит)</label>
+                            <input class="form-control" @bind="EditingEvent.Organizer" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Участники</label>
+                            <input class="form-control" @bind="EditingEvent.Participants" placeholder="ФИО через запятую" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дополнительная информация</label>
+                        <textarea class="form-control" rows="3" @bind="EditingEvent.AdditionalInfo"></textarea>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(FormMessage))
+                    {
+                        <div class="alert alert-danger py-2">@FormMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (EditingEvent.Id > 0)
+                    {
+                        <button class="btn btn-outline-danger me-auto" @onclick="DeleteCurrentEvent">Удалить</button>
+                    }
+                    <button class="btn btn-secondary" @onclick="CloseForm">Отмена</button>
+                    <button class="btn btn-primary" @onclick="SaveEvent">Сохранить в план</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<style>
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 8px; }
+    .calendar-cell { min-height: 130px; border: 1px solid #e5e7eb; border-radius: 8px; padding: 8px; background: white; cursor: pointer; text-align: left; transition: all 0.2s; }
+    .calendar-cell:hover { border-color: #0d6efd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .calendar-cell.muted { background: #f8fafc; color: #94a3b8; opacity: 0.7; }
+    .calendar-cell.holiday { background: #fff7ed; }
+    .day-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .day-number { font-weight: 600; font-size: 1.1rem; }
+    .day-events { display: flex; flex-direction: column; gap: 4px; }
+    .event-pill { background: white; border: 1px solid #e2e8f0; border-radius: 4px; padding: 4px 8px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .event-pill:hover { box-shadow: 0 2px 6px rgba(0,0,0,0.1); border-color: #0d6efd; }
+</style>
+
+@code {
+    [Parameter] public DateTime SelectedDate { get; set; }
+    private bool IsFormOpen { get; set; }
+    private EventFormModel EditingEvent { get; set; } = new();
+    private string FormMessage { get; set; } = string.Empty;
+    
+    protected override void OnInitialized()
+    {
+        if (SelectedDate != default) { CurrentDate = SelectedDate; }
+        base.OnInitialized();
+    }
+    
+    private List<DateTime> GetMonthDays()
+    {
+        var firstDay = new DateTime(CurrentDate.Year, CurrentDate.Month, 1);
+        int daysBefore = ((int)firstDay.DayOfWeek + 6) % 7;
+        var start = firstDay.AddDays(-daysBefore);
+        int totalDays = (start.AddDays(35).Month == CurrentDate.Month) ? 42 : 35;
+        return Enumerable.Range(0, totalDays).Select(i => start.AddDays(i)).ToList();
+    }
+    
+    protected override DateTime GetVisibleStart() => GetMonthDays().First();
+    protected override DateTime GetVisibleEnd() => GetMonthDays().Last().AddDays(1).AddTicks(-1);
+    
+    private async Task OnCategoryFilterChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out var id)) { SelectedCategoryFilter = id; await LoadEventsAsync(); }
+    }
+    
+    private async Task PreviousMonth() { CurrentDate = CurrentDate.AddMonths(-1); await LoadEventsAsync(); }
+    private async Task NextMonth() { CurrentDate = CurrentDate.AddMonths(1); await LoadEventsAsync(); }
+    
+    private void OpenCreateDialog()
+    {
+        EditingEvent = new EventFormModel { StartDate = CurrentDate.Date.AddHours(9), EndDate = CurrentDate.Date.AddHours(10), CategoryId = Categories.FirstOrDefault()?.Id ?? 0 };
+        FormMessage = string.Empty;
+        IsFormOpen = true;
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SelectedDate != default) { CurrentDate = SelectedDate; await LoadEventsAsync(); }
+        await base.OnParametersSetAsync();
+    }
+    
+    private void OpenEditDialog(Event evt)
+    {
+        EditingEvent = new EventFormModel { Id = evt.Id, Title = evt.Title, StartDate = evt.StartDate, EndDate = evt.EndDate ?? evt.StartDate.AddHours(1), Location = evt.Location, Organizer = evt.Organizer, Participants = evt.Participants, AdditionalInfo = evt.AdditionalInfo, CategoryId = evt.CategoryId };
+        FormMessage = string.Empty;
+        IsFormOpen = true;
+    }
+    
+    private void CloseForm() { IsFormOpen = false; EditingEvent = new EventFormModel(); FormMessage = string.Empty; }
+    
+    private async Task SaveEvent()
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(EditingEvent.Title)) { FormMessage = "Введите название мероприятия."; return; }
+            if (!EditingEvent.StartDate.HasValue) { FormMessage = "Введите дату и время начала мероприятия."; return; }
+            var start = EditingEvent.StartDate.Value;
+            var end = EditingEvent.EndDate ?? EditingEvent.StartDate.Value.AddHours(1);
+            if (end <= start) { FormMessage = "Время окончания должно быть позже времени начала."; return; }
+            var entity = new Event { Id = EditingEvent.Id, Title = EditingEvent.Title, StartDate = start, EndDate = end, Location = EditingEvent.Location, Organizer = EditingEvent.Organizer, Participants = EditingEvent.Participants, AdditionalInfo = EditingEvent.AdditionalInfo, CategoryId = EditingEvent.CategoryId };
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.Identity?.Name ?? "system";
+            var userRole = authState.User.IsInRole("Administrator") ? "Administrator" : authState.User.IsInRole("Executor") ? "Executor" : "User";
+            if (EditingEvent.Id > 0) { await EventSvc.UpdateEventAsync(entity, userId, userRole); } else { await EventSvc.AddEventAsync(entity, userId, userRole); }
+            CloseForm();
+            await LoadEventsAsync();
+        }
+        catch (InvalidOperationException ex) { FormMessage = ex.Message; }
+        catch (Exception ex) { FormMessage = $"Ошибка сохранения: {ex.Message}"; }
+    }
+
+    private async Task DeleteCurrentEvent() { if (EditingEvent.Id > 0) { await EventSvc.DeleteEventAsync(EditingEvent.Id); CloseForm(); await LoadEventsAsync(); } }
+    
+    protected override async Task HandleEventClick(Event evt) { OpenEditDialog(evt); await base.HandleEventClick(evt); }
+    protected override async Task HandleCreateEvent() { OpenCreateDialog(); await base.HandleCreateEvent(); }
+
+    public class EventFormModel
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Location { get; set; } = string.Empty;
+        public string Organizer { get; set; } = string.Empty;
+        public string Participants { get; set; } = string.Empty;
+        public string AdditionalInfo { get; set; } = string.Empty;
+        public int CategoryId { get; set; }
+        public DateTime? StartDate { get; set; }
+        public DateTime? EndDate { get; set; }
+        public bool IsAllDay { get; set; }
+    }
+}

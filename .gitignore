@@ -1,12 +1,59 @@
-# Папки компиляции
-[Bb]in/
-[Oo]bj/
+```gitignore
+# Build artifacts and binaries
+*.dll
+*.exe
+*.pdb
+*.so
+*.dylib
+*.obj
+*.o
+*.a
+*.lib
+*.out
 
-# Папка настроек Visual Studio
-.vs/
+# Dependencies
+node_modules/
+packages/
+bin/
+obj/
+.nuget/
+packages/
 
-# Файлы пользователя
-*.user
-*.suo
-*.userosscache
-*.sln.docstates
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Coverage
+coverage/
+htmlcov/
+.coverage
+
+# Compressed files
+*.zip
+*.gz
+*.tar
+*.tgz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.Z
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+```
