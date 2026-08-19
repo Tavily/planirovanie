@@ -1,0 +1,30 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using planirovanie.Components.Layout
+
+<Router AppAssembly="@typeof(Program).Assembly">
+    <Found Context="routeData">
+        <AuthorizeRouteView RouteData="@routeData" DefaultLayout="@typeof(MainLayout)">
+            <NotAuthorized>
+                @if (context.User.Identity?.IsAuthenticated != true)
+                {
+                    <RedirectToLogin />
+                }
+                else
+                {
+                    <p role="alert">У вас нет доступа к этому ресурсу.</p>
+                }
+            </NotAuthorized>
+            <Authorizing>
+                <span class="text-primary">Загрузка...</span>
+            </Authorizing>
+        </AuthorizeRouteView>
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <PageTitle>Не найдено</PageTitle>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <p role="alert">Извините, страница не найдена.</p>
+        </LayoutView>
+    </NotFound>
+</Router>

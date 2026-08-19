@@ -1,0 +1,12 @@
+# Папки компиляции
+[Bb]in/
+[Oo]bj/
+
+# Папка настроек Visual Studio
+.vs/
+
+# Файлы пользователя
+*.user
+*.suo
+*.userosscache
+*.sln.docstates

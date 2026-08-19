@@ -1,0 +1,327 @@
+@page "/calendar/week"
+@using System.Globalization
+@using Microsoft.AspNetCore.Components
+@inject NavigationManager Nav
+@inherits planirovanie.Components.Scheduler.CalendarBase
+
+<div class="container-fluid mt-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        @* <div>
+            <h2 class="mb-1">Календарь мероприятий</h2>
+            <p class="text-muted mb-0">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</p>
+        </div> *@
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary" href="/">На главную</a>
+            <button class="btn btn-primary" @onclick="OpenCreateDialog">+ Добавить мероприятие</button>
+        </div>
+    </div>
+
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+                <div class="btn-group" role="group">
+                    <a class="btn btn-outline-dark" href="/calendar/day">День</a>
+                    <a class="btn btn-outline-dark" href="/calendar/week">Неделя</a>
+                    <a class="btn btn-outline-dark" href="/calendar/month">Месяц</a>
+                </div>
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <span class="badge bg-info text-dark">Режим: Неделя</span>
+                    <select class="form-select form-select-sm" style="width: 240px;" @onchange="OnCategoryFilterChanged">
+                        <option value="0" selected="@(SelectedCategoryFilter == 0)">Все категории</option>
+                        @foreach (var category in Categories)
+                        {
+                            <option value="@category.Id" selected="@(SelectedCategoryFilter == category.Id)">@category.Name</option>
+                        }
+                    </select>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="PrevWeek">←</button>
+                    <strong class="mx-2 text-capitalize">@GetWeekDays().First().ToString("dd MMM") — @GetWeekDays().Last().ToString("dd MMM")</strong>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="NextWeek">→</button>
+                </div>
+            </div>
+
+            <div class="week-view table-responsive">
+                <table class="table table-bordered align-middle text-center">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Время</th>
+                            @foreach (var day in GetWeekDays())
+                            {
+                                <th class="@(IsHoliday(day) ? "table-warning" : string.Empty)">
+                                    <a class="btn btn-link p-0 text-start fw-bold text-decoration-none text-dark" href="/calendar/day?date=@day.ToString("yyyy-MM-dd")">
+                                        @day.ToString("ddd, dd", new CultureInfo("ru-RU"))
+                                    </a>
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var hour = 8; hour <= 18; hour++)
+                        {
+                            <tr>
+                                <td class="fw-bold text-muted">@hour:00</td>
+                                @foreach (var day in GetWeekDays())
+                                {
+                                    var dayEvents = GetEventsForDay(day).Where(e => e.StartDate.Date == day.Date && e.StartDate.Hour == hour).ToList();
+                                    <td class="week-cell p-1" style="min-width: 150px;">
+                                        @foreach (var evt in dayEvents)
+                                        {
+                                            <a class="event-pill d-block w-100 text-start" style="border-left: 4px solid @GetCategoryColor(evt.CategoryId); text-decoration:none; color:inherit;" href="/events/@evt.Id">
+                                                <small class="fw-bold d-block text-truncate">@evt.Title</small>
+                                                <small class="text-muted">@evt.StartDate.ToString("HH:mm")</small>
+                                            </a>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (IsFormOpen)
+{
+    <div class="modal-backdrop show" @onclick="CloseForm"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">@(EditingEvent.Id > 0 ? "Редактирование мероприятия" : "Новое мероприятие")</h5>
+                    <button type="button" class="btn-close" @onclick="CloseForm"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Название мероприятия *</label>
+                        <input class="form-control" @bind="EditingEvent.Title" placeholder="Согласно ТЗ" />
+                    </div>
+                    <div class="row g-2">
+                        <div class="mb-3">
+                            <label class="form-label">Начало</label>
+                            <input class="form-control" type="datetime-local" @bind="EditingEvent.StartDate" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Окончание</label>
+                            <input class="form-control" type="datetime-local" @bind="EditingEvent.EndDate" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Категория</label>
+                            <select class="form-select" @bind="EditingEvent.CategoryId">
+                                @foreach (var category in Categories)
+                                {
+                                    <option value="@category.Id">@category.Name</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Место проведения</label>
+                            <input class="form-control" @bind="EditingEvent.Location" placeholder="Например: Зал заседаний" />
+                        </div>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Организатор (Кто проводит)</label>
+                            <input class="form-control" @bind="EditingEvent.Organizer" />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Участники</label>
+                            <input class="form-control" @bind="EditingEvent.Participants" placeholder="ФИО через запятую" />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Дополнительная информация</label>
+                        <textarea class="form-control" rows="3" @bind="EditingEvent.AdditionalInfo"></textarea>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(FormMessage))
+                    {
+                        <div class="alert alert-danger py-2">@FormMessage</div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    @if (EditingEvent.Id > 0)
+                    {
+                        <button class="btn btn-outline-danger me-auto" @onclick="DeleteCurrentEvent">Удалить</button>
+                    }
+                    <button class="btn btn-secondary" @onclick="CloseForm">Отмена</button>
+                    <button class="btn btn-primary" @onclick="SaveEvent">Сохранить в план</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+ @* <style>
+    .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, minmax(140px, 1fr));
+        gap: 8px;
+    }
+
+    .calendar-cell {
+        min-height: 130px;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 8px;
+        background: white;
+        cursor: pointer;
+        text-align: left;
+        transition: all 0.2s;
+    }
+
+    .calendar-cell:hover {
+        border-color: #0d6efd;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+
+    .calendar-cell.muted {
+        background: #f8fafc;
+        color: #94a3b8;
+        opacity: 0.7;
+    }
+
+    .calendar-cell.holiday {
+        background: #fff7ed;
+        border-color: #fdba74;
+    }
+
+    .day-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+    }
+
+    .day-number {
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+
+    .day-events {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .event-pill {
+        display: block;
+        width: 100%;
+        text-align: left;
+        border: 1px solid #e5e7eb;
+        border-radius: 4px;
+        padding: 4px 6px;
+        background: #f8fafc;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        cursor: pointer;
+        color: inherit;
+    }
+
+    .event-pill:hover {
+        background: #e2e8f0;
+    }
+
+    .week-cell {
+        vertical-align: top;
+    }
+
+    .schedule-board {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .schedule-row {
+        display: grid;
+        grid-template-columns: 80px 1fr;
+        gap: 10px;
+        align-items: stretch;
+    }
+
+    .schedule-time {
+        font-weight: 600;
+        color: #475569;
+        padding-top: 10px;
+    }
+
+    .schedule-track {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        min-height: 44px;
+        border: 1px dashed #e2e8f0;
+        border-radius: 8px;
+        padding: 8px;
+        background: #f8fafc;
+    }
+
+    .schedule-event {
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 8px 12px;
+        background: white;
+        text-align: left;
+        min-width: 250px;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
+    .schedule-event:hover {
+        background: #f1f5f9;
+    }
+
+    .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .modal {
+        position: fixed;
+        inset: 0;
+        z-index: 1050;
+        overflow-y: auto;
+    }
+</style> *@
+
+@code {
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+        var qs = new Uri(Nav.Uri).Query;
+        var q = System.Web.HttpUtility.ParseQueryString(qs);
+        var dateStr = q.Get("date");
+        if (!string.IsNullOrEmpty(dateStr) && DateTime.TryParse(dateStr, out var parsed))
+        {
+            CurrentDate = parsed.Date;
+        }
+
+        var start = GetWeekDays().First();
+        var end = GetWeekDays().Last().AddDays(1).AddTicks(-1);
+        await LoadEventsForRange(start, end);
+    }
+
+    private async Task PrevWeek()
+    {
+        CurrentDate = CurrentDate.AddDays(-7);
+        var start = GetWeekDays().First();
+        var end = GetWeekDays().Last().AddDays(1).AddTicks(-1);
+        await LoadEventsForRange(start, end);
+        Nav.NavigateTo($"/calendar/week?date={CurrentDate:yyyy-MM-dd}", false);
+    }
+
+    private async Task NextWeek()
+    {
+        CurrentDate = CurrentDate.AddDays(7);
+        var start = GetWeekDays().First();
+        var end = GetWeekDays().Last().AddDays(1).AddTicks(-1);
+        await LoadEventsForRange(start, end);
+        Nav.NavigateTo($"/calendar/week?date={CurrentDate:yyyy-MM-dd}", false);
+    }
+}
+
