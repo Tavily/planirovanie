@@ -1,0 +1,110 @@
+@page "/event/{Id:int}"
+@using System.Globalization
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@using planirovanie.Models
+@inject ApplicationDbContext Db
+@attribute [Authorize]
+
+<PageTitle>@(EventItem != null ? EventItem.Title : "Мероприятие")</PageTitle>
+
+<div class="container-fluid mt-4">
+    @if (EventItem == null)
+    {
+        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+            <span>Мероприятие с номером @Id не найдено.</span>
+            <a class="btn btn-outline-secondary btn-sm" href="/calendar/month">Вернуться в календарь</a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <div>
+                <h2 class="mb-1">@EventItem.Title</h2>
+                <span class="badge" style="background: @GetCategoryColor(EventItem.CategoryId);">
+                    @(Category != null ? Category.Name : "Без категории")
+                </span>
+            </div>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-outline-secondary" href="/calendar/day?date=@EventItem.StartDate.ToString("yyyy-MM-dd")">
+                    ← Открыть день в календаре
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="fw-bold text-muted small mb-1">НАЧАЛО</div>
+                        <div class="text-capitalize">@EventItem.StartDate.ToString("dddd, dd MMMM yyyy, HH:mm", Ru)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="fw-bold text-muted small mb-1">ОКОНЧАНИЕ</div>
+                        <div>@(EventItem.EndDate.HasValue ? EventItem.EndDate.Value.ToString("dddd, dd MMMM yyyy, HH:mm", Ru) : "—")</div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(EventItem.Location))
+                    {
+                        <div class="col-md-6">
+                            <div class="fw-bold text-muted small mb-1">МЕСТО ПРОВЕДЕНИЯ</div>
+                            <div>📍 @EventItem.Location</div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(EventItem.Organizer))
+                    {
+                        <div class="col-md-6">
+                            <div class="fw-bold text-muted small mb-1">ОРГАНИЗАТОР</div>
+                            <div>@EventItem.Organizer</div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(EventItem.Participants))
+                    {
+                        <div class="col-12">
+                            <div class="fw-bold text-muted small mb-1">УЧАСТНИКИ</div>
+                            <div>@EventItem.Participants</div>
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrEmpty(EventItem.AdditionalInfo))
+                    {
+                        <div class="col-12">
+                            <div class="fw-bold text-muted small mb-1">ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ</div>
+                            <div style="white-space: pre-wrap;">@EventItem.AdditionalInfo</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private Event EventItem = default!;
+    private EventCategory Category = default!;
+    private static readonly CultureInfo Ru = new("ru-RU");
+
+    protected override async Task OnParametersSetAsync()
+    {
+        EventItem = await Db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == Id);
+        if (EventItem != null)
+        {
+            Category = await Db.EventCategories.AsNoTracking()
+                .FirstOrDefaultAsync(c => c.Id == EventItem.CategoryId);
+        }
+    }
+
+    private string GetCategoryColor(int categoryId) => Category?.Name switch
+    {
+        "С участием Главы города" => "#dc3545",
+        "С участием городских СМИ" => "#0d6efd",
+        "В режиме видеоконференции (ВКС)" => "#198754",
+        "С участием Депутатов Волгодонской городской Думы" => "#6f42c1",
+        _ => "#6c757d"
+    };
+}

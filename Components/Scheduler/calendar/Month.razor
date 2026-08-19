@@ -55,7 +55,7 @@
                         <div class="day-events">
                             @foreach (var evt in eventsForDay.Take(3))
                             {
-                                <a class="event-pill" style="border-left: 6px solid @GetCategoryColor(evt.CategoryId); display:block; text-decoration:none; color:inherit;" href="/events/@evt.Id">
+                                <a class="event-pill" style="border-left: 6px solid @GetCategoryColor(evt.CategoryId); display:block; text-decoration:none; color:inherit;" href="/event/@evt.Id">
                                     @evt.Title
                                 </a>
                             }

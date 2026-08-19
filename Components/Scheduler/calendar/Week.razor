@@ -65,7 +65,7 @@
                                     <td class="week-cell p-1" style="min-width: 150px;">
                                         @foreach (var evt in dayEvents)
                                         {
-                                            <a class="event-pill d-block w-100 text-start" style="border-left: 4px solid @GetCategoryColor(evt.CategoryId); text-decoration:none; color:inherit;" href="/events/@evt.Id">
+                                            <a class="event-pill d-block w-100 text-start" style="border-left: 4px solid @GetCategoryColor(evt.CategoryId); text-decoration:none; color:inherit;" href="/event/@evt.Id">
                                                 <small class="fw-bold d-block text-truncate">@evt.Title</small>
                                                 <small class="text-muted">@evt.StartDate.ToString("HH:mm")</small>
                                             </a>

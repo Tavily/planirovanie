@@ -15,6 +15,12 @@
                     <div class="text-muted small text-truncate">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</div>
                 </div>
             }
+            else if (IsEventDetailsPage)
+            {
+                <div class="me-auto">
+                    <h2 class="mb-0 fw-bold" style="font-size: 1.25rem;">Информация о мероприятии</h2>
+                </div>
+            }
             else
             {
                 <div class="me-auto">
@@ -39,6 +45,8 @@
 </div>
 
 @code {
+    private bool IsEventDetailsPage =>
+        Nav.Uri.Contains("/events/", StringComparison.OrdinalIgnoreCase);
     private bool IsCalendarPage =>
         Nav.Uri.Contains("/calendar", StringComparison.OrdinalIgnoreCase) ||
         Nav.Uri.Contains("/events", StringComparison.OrdinalIgnoreCase);
