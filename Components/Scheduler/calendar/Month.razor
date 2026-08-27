@@ -18,11 +18,7 @@
     <div class="card shadow-sm">
         <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-                <div class="btn-group" role="group">
-                    <a class="btn btn-outline-dark" href="/calendar/day">День</a>
-                    <a class="btn btn-outline-dark" href="/calendar/week">Неделя</a>
-                    <a class="btn btn-outline-dark" href="/calendar/month">Месяц</a>
-                </div>
+                <CalendarNav />
                 <div class="d-flex flex-wrap gap-2 align-items-center">
                     <span class="badge bg-info text-dark">Режим: Месяц</span>
                     <select class="form-select form-select-sm" style="width: 240px;" @onchange="OnCategoryFilterChanged">

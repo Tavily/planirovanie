@@ -1,5 +1,6 @@
 ﻿@page "/scheduler/overview"
 @page "/events"
+@using Microsoft.EntityFrameworkCore
 @inject NavigationManager Nav
 
 @* <PageTitle>Календарь мероприятий</PageTitle> *@
@@ -435,7 +436,7 @@ private void OnEndDateChanged(ChangeEventArgs e)
     private async Task LoadCategoriesAsync()
     {
         // Запрашиваем категории напрямую из контекста, чтобы избежать проблем с разрешением сервиса в Razor
-        Categories = await Db.EventCategories.OrderBy(c => c.Id).ToListAsync();
+        Categories = await Db.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
         if (Categories.Count > 0 && EditingEvent.CategoryId == 0)
         {
             EditingEvent.CategoryId = Categories[0].Id;

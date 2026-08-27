@@ -48,9 +48,26 @@ namespace planirovanie.Components.Scheduler
             }
         }
 
+        protected IEnumerable<Event> GetOtherEventsForDay(DateTime day)
+{
+    // События, которые НЕ попадают в 8‑18
+    return Events
+        .Where(e => e.StartDate.Date == day.Date &&
+                    (e.StartDate.Hour < 8 || e.StartDate.Hour > 18))
+        .OrderBy(e => e.StartDate);
+}
+
+protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
+{
+    // Все события конкретного дня, отсортированные по времени начала
+    return Events
+        .Where(e => e.StartDate.Date == day.Date)
+        .OrderBy(e => e.StartDate);
+}
+
         protected async Task LoadCategoriesAsync()
         {
-            Categories = await Db.EventCategories.OrderBy(c => c.Id).ToListAsync();
+            Categories = await Db.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
             if (Categories.Count > 0 && EditingEvent.CategoryId == 0)
             {
                 EditingEvent.CategoryId = Categories[0].Id;

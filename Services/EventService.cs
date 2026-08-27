@@ -79,7 +79,7 @@ namespace planirovanie.Services
 
         public async Task<List<EventCategory>> GetCategoriesAsync()
         {
-            return await _context.EventCategories.OrderBy(c => c.Id).ToListAsync();
+            return await _context.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
         }
 
         private static DateTime GetMoscowNow()
@@ -147,6 +147,7 @@ namespace planirovanie.Services
         public async Task<List<Event>> GetEventsByDateRangeAsync(DateTime start, DateTime end)
         {
             return await _context.Events
+                .AsNoTracking()
                 .Include(e => e.Category)
                 .Where(e => e.StartDate >= start && e.StartDate <= end)
                 .OrderBy(e => e.StartDate)

@@ -100,7 +100,7 @@
 
     private async Task LoadCategoriesAsync()
     {
-        categories = await DbContext.EventCategories.OrderBy(c => c.Id).ToListAsync();
+        categories = await DbContext.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
     }
 
     private int GetEventCount(int categoryId)

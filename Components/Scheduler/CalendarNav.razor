@@ -1,0 +1,14 @@
+@inject NavigationManager Nav
+
+<div class="btn-group" role="group">
+    <a class="btn @(IsActive("/calendar/day") ? "btn-dark" : "btn-outline-dark")"
+       href="/calendar/day">День</a>
+    <a class="btn @(IsActive("/calendar/week") ? "btn-dark" : "btn-outline-dark")"
+       href="/calendar/week">Неделя</a>
+    <a class="btn @(IsActive("/calendar/month") ? "btn-dark" : "btn-outline-dark")"
+       href="/calendar/month">Месяц</a>
+</div>
+
+@code {
+    private bool IsActive(string path) => Nav.Uri.Contains(path);
+}
