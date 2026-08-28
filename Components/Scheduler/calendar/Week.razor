@@ -6,13 +6,51 @@
 
 <div class="container-fluid mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-        @* <div>
-            <h2 class="mb-1">Календарь мероприятий</h2>
-            <p class="text-muted mb-0">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</p>
-        </div> *@
+        @{
+    // Список всех дней недели
+    var weekDays = GetWeekDays();
+
+    // Список всех событий недели, отсортированных по времени
+    var weekEvents = Events
+        .Where(e => weekDays.Contains(e.StartDate.Date))
+        .OrderBy(e => e.StartDate)
+        .ToList();
+
+    // Список строк: каждая строка – время и для каждого дня список событий, начинающихся в это время
+    var rows = new List<(DateTime Time, Dictionary<DateTime, List<Event>> DayEvents)>();
+
+    // 1) Строки по часам 8‑18
+    for (int hour = 8; hour <= 18; hour++)
+    {
+        var time = new DateTime(CurrentDate.Year, CurrentDate.Month, CurrentDate.Day, hour, 0, 0);
+        var dayEvents = weekDays.ToDictionary(
+            d => d,
+            d => weekEvents.Where(e => e.StartDate.Date == d.Date && e.StartDate.Hour == hour && e.StartDate.Minute == 0).ToList()
+        );
+        rows.Add((time, dayEvents));
+    }
+
+    // 2) Строки для событий, которые НЕ начинаются ровно в час
+    var otherEvents = weekEvents
+        .Where(e => e.StartDate.Minute != 0 || e.StartDate.Hour < 8 || e.StartDate.Hour > 18)
+        .OrderBy(e => e.StartDate)
+        .ToList();
+
+    foreach (var ev in otherEvents)
+    {
+        var dayEvents = weekDays.ToDictionary(
+            d => d,
+            d => weekEvents.Where(e2 => e2.StartDate.Date == d.Date && e2.StartDate == ev.StartDate).ToList()
+        );
+        rows.Add((ev.StartDate, dayEvents));
+    }
+
+    // Сортируем строки по времени
+    rows = rows.OrderBy(r => r.Time).ToList();
+}
         <div class="d-flex flex-wrap gap-2">
             <a class="btn btn-outline-secondary" href="/">На главную</a>
-            <button class="btn btn-primary" @onclick="OpenCreateDialog">+ Добавить мероприятие</button>
+            <button class="btn btn-primary" @onclick="() => OpenCreateDialog()">+ Добавить мероприятие</button>
         </div>
     </div>
 
@@ -42,7 +80,7 @@
                             <th style="width: 80px;">Время</th>
                             @foreach (var day in GetWeekDays())
                             {
-                                <th class="@(IsHoliday(day) ? "table-warning" : string.Empty)">
+                                <th class="@(IsHoliday(day) ? "table-warning" : string.Empty) ">
                                     <a class="btn btn-link p-0 text-start fw-bold text-decoration-none text-dark" href="/calendar/day?date=@day.ToString("yyyy-MM-dd")">
                                         @day.ToString("ddd, dd", new CultureInfo("ru-RU"))
                                     </a>
@@ -51,17 +89,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @for (var hour = 8; hour <= 18; hour++)
+                        @foreach (var row in rows)
                         {
                             <tr>
-                                <td class="fw-bold text-muted">@hour:00</td>
+                                <td class="fw-bold text-muted">@row.Time.ToString("HH:mm")</td>
                                 @foreach (var day in GetWeekDays())
                                 {
-                                    var dayEvents = GetEventsForDay(day).Where(e => e.StartDate.Date == day.Date && e.StartDate.Hour == hour).ToList();
+                                    var evs = row.DayEvents[day];
                                     <td class="week-cell p-1" style="min-width: 150px;">
-                                        @foreach (var evt in dayEvents)
+                                        <!-- No placeholder for empty rows in week view -->
+                                        @foreach (var evt in evs)
                                         {
-                                            <a class="event-pill d-block w-100 text-start" style="border-left: 4px solid @GetCategoryColor(evt.CategoryId); text-decoration:none; color:inherit;" href="/event/@evt.Id">
+                                            <a class="event-pill d-block w-100 text-start"
+                                               style="border-left: 4px solid @GetCategoryColor(evt.CategoryId); text-decoration:none; color:inherit;"
+                                               href="/event/@evt.Id">
                                                 <small class="fw-bold d-block text-truncate">@evt.Title</small>
                                                 <small class="text-muted">@evt.StartDate.ToString("HH:mm")</small>
                                             </a>
@@ -70,29 +111,7 @@
                                 }
                             </tr>
                         }
-                        <!-- После цикла с 8‑18 -->
-<tr>
-    <td class="fw-bold text-muted">Другие</td>
-    @foreach (var day in GetWeekDays())
-    {
-        var otherEvents = GetEventsForDay(day)
-            .Where(e => e.StartDate.Hour < 8 || e.StartDate.Hour > 18)
-            .OrderBy(e => e.StartDate)
-            .ToList();
-
-        <td class="week-cell p-1" style="min-width: 150px;">
-            @foreach (var evt in otherEvents)
-            {
-                <a class="event-pill d-block w-100 text-start"
-                   style="border-left: 4px solid @GetCategoryColor(evt.CategoryId); text-decoration:none; color:inherit;"
-                   href="/event/@evt.Id">
-                    <small class="fw-bold d-block text-truncate">@evt.Title</small>
-                    <small class="text-muted">@evt.StartDate.ToString("HH:mm")</small>
-                </a>
-            }
-        </td>
-    }
-</tr>
+                        <!-- Removed "Другие" row to avoid duplicate events -->
                     </tbody>
                 </table>
             </div>

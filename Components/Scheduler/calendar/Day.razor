@@ -5,13 +5,39 @@
 
 <div class="container-fluid mt-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
-        @* <div>
-            <h2 class="mb-1">Календарь мероприятий</h2>
-            <p class="text-muted mb-0">План основных мероприятий, проводимых на территории муниципального образования "Город Волгодонск"</p>
-        </div> *@
+       @{
+    // Список событий текущего дня, отсортированный по времени
+    var dayEvents = GetEventsForDaySorted(CurrentDate).ToList();
+
+    // Список строк: каждая строка – время и список событий, начинающихся в это время
+    var rows = new List<(DateTime Time, List<Event> Events)>();
+
+    // 1) Строки по часам 8‑18 (с минутой 0)
+    for (int hour = 8; hour <= 18; hour++)
+    {
+        var time = new DateTime(CurrentDate.Year, CurrentDate.Month, CurrentDate.Day, hour, 0, 0);
+        var hourEvents = dayEvents.Where(e => e.StartDate.Hour == hour && e.StartDate.Minute == 0).ToList();
+        rows.Add((time, hourEvents));
+    }
+
+    // 2) Строки для событий, которые НЕ начинаются ровно в час
+    //    (или находятся до 8:00 / после 18:00)
+    var otherEvents = dayEvents
+        .Where(e => e.StartDate.Minute != 0 || e.StartDate.Hour < 8 || e.StartDate.Hour > 18)
+        .OrderBy(e => e.StartDate)
+        .ToList();
+
+    foreach (var ev in otherEvents)
+    {
+        rows.Add((ev.StartDate, new List<Event> { ev }));
+    }
+
+    // Сортируем строки по времени
+    rows = rows.OrderBy(r => r.Time).ToList();
+}
         <div class="d-flex flex-wrap gap-2">
             <a class="btn btn-outline-secondary" href="/">На главную</a>
-            <button class="btn btn-primary" @onclick="OpenCreateDialog">+ Добавить мероприятие</button>
+            <button class="btn btn-primary" @onclick="() => OpenCreateDialog()">+ Добавить мероприятие</button>
         </div>
     </div>
 
@@ -35,50 +61,37 @@
             </div>
 
             <div class="day-view">
-    <div class="schedule-board">
-@if (GetOtherEventsForDay(CurrentDate).Any())
-{
-    <div class="mt-3">
-        <h5 class="mb-2">События вне рабочего времени</h5>
-        @foreach (var evt in GetOtherEventsForDay(CurrentDate))
-        {
-            <div class="mb-2">
-                <a class="text-decoration-none" href="/event/@evt.Id">
-                    <strong>@evt.Title</strong> – @evt.StartDate.ToString("HH:mm")
-                </a>
-            </div>
-        }
-    </div>
-}
-        @for (var hour = 8; hour <= 18; hour++)
-        {
-            var hourEvents = VisibleEvents.Where(e => e.StartDate.Date == CurrentDate.Date && e.StartDate.Hour == hour).ToList();
-            <div class="schedule-row">
-                <div class="schedule-time">@hour:00</div>
-                <div class="schedule-track">
-                    @if (!hourEvents.Any())
+                <div class="schedule-board">
+                    @foreach (var row in rows)
                     {
-                        <div class="text-muted small fst-italic ps-2 align-self-center">Нет мероприятий</div>
-                    }
-                    @foreach (var evt in hourEvents)
-                    {
-                        <a class="schedule-event" style="border-left: 6px solid @GetCategoryColor(evt.CategoryId); display:block; text-decoration:none; color:inherit;" href="/event/@evt.Id">
-                            <div class="fw-bold">@evt.Title</div>
-                            <div class="small text-muted">@evt.StartDate.ToString("HH:mm") — @evt.EndDate?.ToString("HH:mm")</div>
-                            @if (!string.IsNullOrEmpty(evt.Location))
-                            {
-                                <div class="small text-muted">📍 @evt.Location</div>
-                            }
-                        </a>
+                        <div class="schedule-row">
+                            <button class="schedule-time btn btn-link p-0" style="background:none;border:none;padding:0;" type="button" @onclick="() => OpenCreateDialog(row.Time)">@row.Time.ToString("HH:mm")</button>
+                            <div class="schedule-track">
+                                @if (!row.Events.Any())
+                                {
+                                    <div class="text-muted small fst-italic ps-2 align-self-center">Нет мероприятий</div>
+                                }
+                                @foreach (var evt in row.Events)
+                                {
+                                    <a class="schedule-event"
+                                       style="border-left: 6px solid @GetCategoryColor(evt.CategoryId); display:block; text-decoration:none; color:inherit;"
+                                       href="/event/@evt.Id">
+                                        <div class="fw-bold">@evt.Title</div>
+                                        <div class="small text-muted">@evt.StartDate.ToString("HH:mm") — @evt.EndDate?.ToString("HH:mm")</div>
+                                        @if (!string.IsNullOrEmpty(evt.Location))
+                                        {
+                                            <div class="small text-muted">📍 @evt.Location</div>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        </div>
                     }
                 </div>
             </div>
-        }
-    </div>
             </div>
         </div>
     </div>
-</div>
 
 @if (IsFormOpen)
 {

@@ -157,12 +157,13 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
 
         protected void ToggleImportPanel() => ShowImportPanel = !ShowImportPanel;
 
-        protected void OpenCreateDialog()
+        protected void OpenCreateDialog(DateTime? suggestedStart = null)
         {
+            var start = suggestedStart ?? CurrentDate.Date.AddHours(9);
             EditingEvent = new EventFormModel
             {
-                StartDate = CurrentDate.Date.AddHours(9),
-                EndDate = CurrentDate.Date.AddHours(10),
+                StartDate = start,
+                EndDate = start.AddHours(1),
                 CategoryId = Categories.FirstOrDefault()?.Id ?? 0
             };
             FormMessage = string.Empty;
