@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using planirovanie.Data;
+using planirovanie.Models;
 using planirovanie.Services;
 using Microsoft.AspNetCore.Antiforgery;
 
@@ -13,7 +14,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseMySql(connectionString, new MySqlServerVersion(new Version(8, 0, 46))));
 // 2. Identity
-builder.Services.AddIdentity<IdentityUser, IdentityRole>(options => {
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => {
     options.SignIn.RequireConfirmedAccount = false;
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
@@ -47,7 +48,7 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
     // Создание роли Администратора
     if (!await roleManager.RoleExistsAsync("Administrator"))
@@ -65,7 +66,13 @@ using (var scope = app.Services.CreateScope())
     var adminEmail = "admin@volgodonsk.local";
     if (await userManager.FindByEmailAsync(adminEmail) == null)
     {
-        var admin = new IdentityUser { UserName = adminEmail, Email = adminEmail };
+        var admin = new ApplicationUser 
+        { 
+            UserName = adminEmail.Split('@')[0],
+            Email = adminEmail,
+            FullName = null,
+            Position = null
+        };
         var result = await userManager.CreateAsync(admin, "Admin12345!");
         if (result.Succeeded)
         {
@@ -78,7 +85,13 @@ using (var scope = app.Services.CreateScope())
     var userEmail = "user@volgodonsk.local";
     if (await userManager.FindByEmailAsync(userEmail) == null)
     {
-        var user = new IdentityUser { UserName = userEmail, Email = userEmail };
+        var user = new ApplicationUser 
+        { 
+            UserName = userEmail.Split('@')[0],
+            Email = userEmail,
+            FullName = null,
+            Position = null
+        };
         var result = await userManager.CreateAsync(user, "User12345!");
         if (result.Succeeded)
         {
@@ -109,7 +122,7 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 // POST-эндпоинт для входа (выполняет SignIn на уровне HTTP-ответа)
-app.MapPost("/signin", async (HttpContext httpContext, SignInManager<IdentityUser> signInManager) =>
+app.MapPost("/signin", async (HttpContext httpContext, SignInManager<ApplicationUser> signInManager) =>
 {
     // Read body manually to avoid automatic form model binding which adds antiforgery metadata.
     using var reader = new StreamReader(httpContext.Request.Body);

@@ -1,7 +1,8 @@
 ﻿@* This component is kept for UI layout only. The actual /Logout route is handled by pages/Logout.cshtml *@
 @rendermode InteractiveServer
 @using Microsoft.AspNetCore.Identity
-@inject SignInManager<IdentityUser> SignInManager
+@using planirovanie.Models
+@inject SignInManager<ApplicationUser> SignInManager
 @inject NavigationManager NavigationManager
 
 <PageTitle>Выход из системы</PageTitle>

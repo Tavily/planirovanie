@@ -4,7 +4,7 @@ using planirovanie.Models;
 
 namespace planirovanie.Data
 {
-    public class ApplicationDbContext : IdentityDbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -17,6 +17,9 @@ namespace planirovanie.Data
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // Указываем, что таблица всё равно называется AspNetUsers
+            builder.Entity<ApplicationUser>().ToTable("AspNetUsers");
 
             builder.Entity<EventCategory>().HasData(
                 new EventCategory { Id = 1, Name = "С участием Главы города" },
