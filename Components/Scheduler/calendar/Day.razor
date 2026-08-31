@@ -65,7 +65,7 @@
                     @foreach (var row in rows)
                     {
                         <div class="schedule-row">
-                            <button class="schedule-time btn btn-link p-0" style="background:none;border:none;padding:0;" type="button" @onclick="() => OpenCreateDialog(row.Time)">@row.Time.ToString("HH:mm")</button>
+                            <button class="schedule-time btn btn-link p-0" style="background:none;border:none;padding:0;text-decoration:none;" type="button" @onclick="() => OpenCreateDialog(row.Time)">@row.Time.ToString("HH:mm")</button>
                             <div class="schedule-track">
                                 @if (!row.Events.Any())
                                 {
