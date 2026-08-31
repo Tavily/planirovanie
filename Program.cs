@@ -122,7 +122,7 @@ app.UseAuthorization();
 app.UseAntiforgery();
 
 // POST-эндпоинт для входа (выполняет SignIn на уровне HTTP-ответа)
-app.MapPost("/signin", async (HttpContext httpContext, SignInManager<ApplicationUser> signInManager) =>
+app.MapPost("/signin", async (HttpContext httpContext, SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager) =>
 {
     // Read body manually to avoid automatic form model binding which adds antiforgery metadata.
     using var reader = new StreamReader(httpContext.Request.Body);
@@ -136,7 +136,16 @@ app.MapPost("/signin", async (HttpContext httpContext, SignInManager<Application
     if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(password))
         return Results.Redirect("/login?error=1");
 
-    var result = await signInManager.PasswordSignInAsync(email, password, remember, lockoutOnFailure: false);
+    // Ищем пользователя: если введён email (с @) — по Email, иначе — по UserName.
+    // PasswordSignInAsync ищет только по UserName, поэтому передаём именно его.
+    ApplicationUser? user = email.Contains('@')
+        ? await userManager.FindByEmailAsync(email)
+        : await userManager.FindByNameAsync(email);
+
+    if (user == null)
+        return Results.Redirect("/login?error=1");
+
+    var result = await signInManager.PasswordSignInAsync(user.UserName, password, remember, lockoutOnFailure: false);
     if (result.Succeeded)
         return Results.Redirect("/");
 

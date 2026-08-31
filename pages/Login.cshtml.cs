@@ -9,10 +9,12 @@ using System.ComponentModel.DataAnnotations;
 public class LoginModel : PageModel
 {
     private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public LoginModel(SignInManager<ApplicationUser> signInManager)
+    public LoginModel(SignInManager<ApplicationUser> signInManager, UserManager<ApplicationUser> userManager)
     {
         _signInManager = signInManager;
+        _userManager = userManager;
     }
 
     [BindProperty]
@@ -29,8 +31,20 @@ public class LoginModel : PageModel
             return Page();
         }
 
+        // Ищем пользователя: если введён email (с @) — по Email, иначе — по UserName.
+        // PasswordSignInAsync ищет только по UserName, поэтому передаём именно его.
+        var user = Input.Email.Contains('@')
+            ? await _userManager.FindByEmailAsync(Input.Email)
+            : await _userManager.FindByNameAsync(Input.Email);
+
+        if (user == null)
+        {
+            ModelState.AddModelError(string.Empty, "Неверный логин или пароль.");
+            return Page();
+        }
+
         var result = await _signInManager.PasswordSignInAsync(
-            Input.Email,
+            user.UserName,
             Input.Password,
             Input.RememberMe,
             lockoutOnFailure: false);
@@ -47,7 +61,6 @@ public class LoginModel : PageModel
     public class InputModel
     {
         [Required]
-        [EmailAddress]
         public string Email { get; set; } = string.Empty;
 
         [Required]

@@ -63,8 +63,8 @@
 
         <form method="post">
             <div class="mb-3">
-                <label asp-for="Input.Email"></label>
-                <input asp-for="Input.Email" class="form-control" />
+                <label asp-for="Input.Email">Логин или email</label>
+                <input asp-for="Input.Email" class="form-control" autocomplete="username" />
                 <span asp-validation-for="Input.Email" class="text-danger"></span>
             </div>
 
