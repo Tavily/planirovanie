@@ -10,8 +10,8 @@
     // Список всех дней недели
     var weekDays = GetWeekDays();
 
-    // Список всех событий недели, отсортированных по времени
-    var weekEvents = Events
+    // Список всех событий недели, отсортированных по времени (с учётом фильтра по категории)
+    var weekEvents = VisibleEvents
         .Where(e => weekDays.Contains(e.StartDate.Date))
         .OrderBy(e => e.StartDate)
         .ToList();

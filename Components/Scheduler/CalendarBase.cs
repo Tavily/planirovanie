@@ -13,6 +13,7 @@ namespace planirovanie.Components.Scheduler
         [Inject] protected EventService EventSvc { get; set; } = default!;
         [Inject] protected ApplicationDbContext Db { get; set; } = default!;
         [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+        [Inject] protected NavigationManager Navigation { get; set; } = default!;
 
         protected DateTime CurrentDate { get; set; } = DateTime.Today;
         protected List<Event> Events { get; set; } = new();
@@ -26,9 +27,17 @@ namespace planirovanie.Components.Scheduler
         // Кэш праздников
         protected HashSet<DateTime> _stateHolidays = new();
 
-        protected override async Task OnInitializedAsync()
+        protected override Task OnInitializedAsync()
         {
             InitializeHolidays();
+            return Task.CompletedTask;
+        }
+
+        // Загружаем категории здесь (а не в OnInitializedAsync), чтобы в статическом SSR
+        // они выполнялись последовательно с загрузкой событий в дочерних страницах.
+        // Иначе два запроса к одному и тому же (scoped) DbContext стартуют параллельно.
+        protected override async Task OnParametersSetAsync()
+        {
             await LoadCategoriesAsync();
         }
 
@@ -157,8 +166,15 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
 
         protected void ToggleImportPanel() => ShowImportPanel = !ShowImportPanel;
 
-        protected void OpenCreateDialog(DateTime? suggestedStart = null)
+        protected async Task OpenCreateDialog(DateTime? suggestedStart = null)
         {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (!authState.User.Identity?.IsAuthenticated ?? false)
+            {
+                Navigation.NavigateTo("/login", forceLoad: true);
+                return;
+            }
+
             var start = suggestedStart ?? CurrentDate.Date.AddHours(9);
             EditingEvent = new EventFormModel
             {
