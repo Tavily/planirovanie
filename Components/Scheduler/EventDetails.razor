@@ -4,7 +4,7 @@
 @using Microsoft.EntityFrameworkCore
 @using planirovanie.Data
 @using planirovanie.Models
-@inject ApplicationDbContext Db
+@inject IServiceScopeFactory ScopeFactory
 
 <PageTitle>@(EventItem != null ? EventItem.Title : "Мероприятие")</PageTitle>
 
@@ -84,16 +84,22 @@
 @code {
     [Parameter] public int Id { get; set; }
 
-    private Event EventItem = default!;
-    private EventCategory Category = default!;
+    private Event? EventItem;
+    private EventCategory? Category;
     private static readonly CultureInfo Ru = new("ru-RU");
 
     protected override async Task OnParametersSetAsync()
     {
-        EventItem = await Db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == Id);
+        // Отдельный scope с собственным DbContext, чтобы запросы этой страницы
+        // не пересекались по времени с запросами LoginDisplay (один scoped-контекст
+        // не может выполнять две операции параллельно в статическом SSR).
+        using var scope = ScopeFactory.CreateScope();
+        var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+
+        EventItem = await db.Events.AsNoTracking().FirstOrDefaultAsync(e => e.Id == Id);
         if (EventItem != null)
         {
-            Category = await Db.EventCategories.AsNoTracking()
+            Category = await db.EventCategories.AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == EventItem.CategoryId);
         }
     }
