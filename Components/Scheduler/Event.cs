@@ -34,11 +34,24 @@ namespace planirovanie.Models
         public DateTime? UpdatedAt { get; set; }
 
         public bool IsLocked { get; set; }
+
+        public ICollection<EventParticipant> EventParticipants { get; set; } = new List<EventParticipant>();
     }
 
     public class EventCategory
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+    }
+
+    public class EventParticipant
+    {
+        public int EventId { get; set; }
+        public Event Event { get; set; } = default!;
+
+        public string UserId { get; set; } = default!;
+        public ApplicationUser User { get; set; } = default!;
+
+        public string Role { get; set; } = "Participant"; // Participant, Speaker, Organizer
     }
 }

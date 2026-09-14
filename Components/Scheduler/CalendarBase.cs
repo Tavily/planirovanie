@@ -24,6 +24,47 @@ namespace planirovanie.Components.Scheduler
         protected string FormMessage { get; set; } = string.Empty;
         protected bool ShowImportPanel { get; set; }
 
+        // --- Блок для автокомплита участников ---
+        protected List<ApplicationUser> AvailableUsers { get; set; } = new();
+        protected List<string> SelectedUserIds { get; set; } = new();
+        protected string ParticipantSearch { get; set; } = string.Empty;
+        protected bool ShowParticipantDropdown { get; set; } = false;
+
+        protected List<ApplicationUser> FilteredUsers => string.IsNullOrWhiteSpace(ParticipantSearch)
+            ? AvailableUsers
+            : AvailableUsers
+                .Where(u => (u.FullName ?? string.Empty).Contains(ParticipantSearch, StringComparison.OrdinalIgnoreCase)
+                         || (u.Position ?? string.Empty).Contains(ParticipantSearch, StringComparison.OrdinalIgnoreCase)
+                         || (u.UserName ?? string.Empty).Contains(ParticipantSearch, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        protected void AddParticipant(string userId)
+        {
+            if (!string.IsNullOrWhiteSpace(userId) && !SelectedUserIds.Contains(userId))
+            {
+                SelectedUserIds.Add(userId);
+            }
+            ParticipantSearch = string.Empty;
+            ShowParticipantDropdown = false;
+        }
+
+        protected void RemoveParticipant(string userId)
+        {
+            SelectedUserIds.Remove(userId);
+        }
+
+        protected ApplicationUser? GetUserById(string userId)
+        {
+            return AvailableUsers.FirstOrDefault(u => u.Id == userId);
+        }
+
+        protected string GetDisplayName(ApplicationUser user)
+        {
+            return string.IsNullOrWhiteSpace(user.FullName)
+                ? user.UserName ?? user.Id
+                : $"{user.FullName}{(string.IsNullOrEmpty(user.Position) ? "" : $" — {user.Position}")}";
+        }
+
         // Кэш праздников
         protected HashSet<DateTime> _stateHolidays = new();
 
@@ -39,6 +80,14 @@ namespace planirovanie.Components.Scheduler
         protected override async Task OnParametersSetAsync()
         {
             await LoadCategoriesAsync();
+            await LoadAvailableUsersAsync();
+        }
+
+        protected async Task LoadAvailableUsersAsync()
+        {
+            AvailableUsers = await Db.Users
+                .OrderBy(u => u.FullName ?? u.UserName ?? u.Id)
+                .ToListAsync();
         }
 
         protected void InitializeHolidays()
@@ -182,11 +231,14 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 EndDate = start.AddHours(1),
                 CategoryId = Categories.FirstOrDefault()?.Id ?? 0
             };
+            SelectedUserIds = new List<string>();
+            ParticipantSearch = string.Empty;
+            ShowParticipantDropdown = false;
             FormMessage = string.Empty;
             IsFormOpen = true;
         }
 
-        protected void OpenEditDialog(Event evt)
+        protected async Task OpenEditDialog(Event evt)
         {
             EditingEvent = new EventFormModel
             {
@@ -200,6 +252,12 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 AdditionalInfo = evt.AdditionalInfo,
                 CategoryId = evt.CategoryId
             };
+            SelectedUserIds = await Db.EventParticipants
+                .Where(ep => ep.EventId == evt.Id)
+                .Select(ep => ep.UserId)
+                .ToListAsync();
+            ParticipantSearch = string.Empty;
+            ShowParticipantDropdown = false;
             FormMessage = string.Empty;
             IsFormOpen = true;
         }
@@ -258,11 +316,41 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 if (EditingEvent.Id > 0)
                 {
                     await EventSvc.UpdateEventAsync(entity, userId, userRole);
+
+                    // Удаляем старые записи об участниках
+                    var existingParticipants = await Db.EventParticipants
+                        .Where(ep => ep.EventId == entity.Id)
+                        .ToListAsync();
+                    Db.EventParticipants.RemoveRange(existingParticipants);
+
+                    // Добавляем новые
+                    foreach (var uid in SelectedUserIds)
+                    {
+                        Db.EventParticipants.Add(new EventParticipant
+                        {
+                            EventId = entity.Id,
+                            UserId = uid,
+                            Role = "Participant"
+                        });
+                    }
                 }
                 else
                 {
                     await EventSvc.AddEventAsync(entity, userId, userRole);
+
+                    // Добавляем участников к новому мероприятию
+                    foreach (var uid in SelectedUserIds)
+                    {
+                        Db.EventParticipants.Add(new EventParticipant
+                        {
+                            EventId = entity.Id,
+                            UserId = uid,
+                            Role = "Participant"
+                        });
+                    }
                 }
+
+                await Db.SaveChangesAsync();
 
                 CloseForm();
                 await LoadEventsForRange(GetVisibleStart(), GetVisibleEnd());
