@@ -138,15 +138,49 @@
                     </div>
                     <div class="row g-2">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Организатор (Кто проводит)</label>
-                            <input class="form-control" @bind="EditingEvent.Organizer" />
+                            <label class="form-label">Кто проводит</label>
+                            <div class="position-relative" @onfocusout="OnOrganizerFocusOut">
+                                @if (SelectedOrganizerId != null)
+                                {
+                                    var organizerUser = GetOrganizerUser();
+                                    <div class="participant-chip badge bg-success rounded-pill d-inline-flex align-items-center position-relative">
+                                        @(organizerUser != null ? organizerUser.FullName ?? organizerUser.UserName ?? SelectedOrganizerId : SelectedOrganizerId)
+                                        <span class="participant-remove" @onclick="ClearOrganizer" @onclick:stopPropagation="true">×</span>
+                                    </div>
+                                    <input class="form-control mt-2" type="text" disabled placeholder="Организатор выбран" />
+                                }
+                                else
+                                {
+                                    <input class="form-control"
+                                           value="@OrganizerSearch"
+                                           @oninput="OnOrganizerInput"
+                                           @onfocus="() => ShowOrganizerDropdown = true"
+                                           placeholder="Начните вводить ФИО организатора" />
+
+                                    @if (ShowOrganizerDropdown && FilteredOrganizers.Any() && !string.IsNullOrWhiteSpace(OrganizerSearch))
+                                    {
+                                        <div class="list-group position-absolute w-100 shadow bg-white" style="z-index: 1060; max-height: 220px; overflow-y: auto;">
+                                            @foreach (var user in FilteredOrganizers)
+                                            {
+                                                var displayName = GetDisplayName(user);
+                                                <button type="button"
+                                                        class="list-group-item list-group-item-action"
+                                                        @onmousedown:preventDefault
+                                                        @onclick="() => SetOrganizer(user.Id)">
+                                                    @displayName
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Участники</label>
-                            <div class="position-relative">
+                            <div class="position-relative" @onfocusout="OnParticipantsFocusOut">
                                 <input class="form-control"
-                                       @bind="ParticipantSearch"
-                                       @oninput="() => ShowParticipantDropdown = true"
+                                       value="@ParticipantSearch"
+                                       @oninput="OnParticipantInput"
                                        @onfocus="() => ShowParticipantDropdown = true"
                                        placeholder="Начните вводить ФИО, должность или логин" />
 
@@ -160,6 +194,7 @@
                                             <button type="button"
                                                     class="list-group-item list-group-item-action @(isAlreadySelected ? "disabled text-muted" : "")"
                                                     disabled="@isAlreadySelected"
+                                                    @onmousedown:preventDefault
                                                     @onclick="() => AddParticipant(user.Id)">
                                                 @displayName
                                                 @if (isAlreadySelected)

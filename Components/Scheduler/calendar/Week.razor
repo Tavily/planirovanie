@@ -161,12 +161,88 @@
                     </div>
                     <div class="row g-2">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Организатор (Кто проводит)</label>
-                            <input class="form-control" @bind="EditingEvent.Organizer" />
+                            <label class="form-label">Кто проводит</label>
+                            <div class="position-relative" @onfocusout="OnOrganizerFocusOut">
+                                @if (SelectedOrganizerId != null)
+                                {
+                                    var organizerUser = GetOrganizerUser();
+                                    <div class="participant-chip badge bg-success rounded-pill d-inline-flex align-items-center position-relative">
+                                        @(organizerUser != null ? organizerUser.FullName ?? organizerUser.UserName ?? SelectedOrganizerId : SelectedOrganizerId)
+                                        <span class="participant-remove" @onclick="ClearOrganizer" @onclick:stopPropagation="true">×</span>
+                                    </div>
+                                    <input class="form-control mt-2" type="text" disabled placeholder="Организатор выбран" />
+                                }
+                                else
+                                {
+                                    <input class="form-control"
+                                           value="@OrganizerSearch"
+                                           @oninput="OnOrganizerInput"
+                                           @onfocus="() => ShowOrganizerDropdown = true"
+                                           placeholder="Начните вводить ФИО организатора" />
+
+                                    @if (ShowOrganizerDropdown && FilteredOrganizers.Any() && !string.IsNullOrWhiteSpace(OrganizerSearch))
+                                    {
+                                        <div class="list-group position-absolute w-100 shadow bg-white" style="z-index: 1060; max-height: 220px; overflow-y: auto;">
+                                            @foreach (var user in FilteredOrganizers)
+                                            {
+                                                var displayName = GetDisplayName(user);
+                                                <button type="button"
+                                                        class="list-group-item list-group-item-action"
+                                                        @onmousedown:preventDefault
+                                                        @onclick="() => SetOrganizer(user.Id)">
+                                                    @displayName
+                                                </button>
+                                            }
+                                        </div>
+                                    }
+                                }
+                            </div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Участники</label>
-                            <input class="form-control" @bind="EditingEvent.Participants" placeholder="ФИО через запятую" />
+                            <div class="position-relative" @onfocusout="OnParticipantsFocusOut">
+                                <input class="form-control"
+                                       value="@ParticipantSearch"
+                                       @oninput="OnParticipantInput"
+                                       @onfocus="() => ShowParticipantDropdown = true"
+                                       placeholder="Начните вводить ФИО, должность или логин" />
+
+                                @if (ShowParticipantDropdown && FilteredUsers.Any() && !string.IsNullOrWhiteSpace(ParticipantSearch))
+                                {
+                                    <div class="list-group position-absolute w-100 shadow bg-white" style="z-index: 1060; max-height: 220px; overflow-y: auto;">
+                                        @foreach (var user in FilteredUsers)
+                                        {
+                                            var displayName = GetDisplayName(user);
+                                            var isAlreadySelected = SelectedUserIds.Contains(user.Id);
+                                            <button type="button"
+                                                    class="list-group-item list-group-item-action @(isAlreadySelected ? "disabled text-muted" : "")"
+                                                    disabled="@isAlreadySelected"
+                                                    @onmousedown:preventDefault
+                                                    @onclick="() => AddParticipant(user.Id)">
+                                                @displayName
+                                                @if (isAlreadySelected)
+                                                {
+                                                    <span class="badge bg-secondary ms-2">уже добавлен</span>
+                                                }
+                                            </button>
+                                        }
+                                    </div>
+                                }
+                            </div>
+
+                            @if (SelectedUserIds.Any())
+                            {
+                                <div class="d-flex flex-wrap gap-2 mt-2">
+                                    @foreach (var userId in SelectedUserIds)
+                                    {
+                                        var user = GetUserById(userId);
+                                        <div class="participant-chip badge bg-primary rounded-pill d-inline-flex align-items-center position-relative">
+                                            @(user != null ? user.FullName ?? user.UserName ?? userId : userId)
+                                            <span class="participant-remove" @onclick="() => RemoveParticipant(userId)" @onclick:stopPropagation="true">×</span>
+                                        </div>
+                                    }
+                                </div>
+                            }
                         </div>
                     </div>
                     <div class="mb-3">
@@ -326,6 +402,38 @@
         overflow-y: auto;
     }
 </style> *@
+
+<style>
+    .participant-chip {
+        padding: 6px 12px 6px 14px !important;
+        padding-right: 30px !important;
+        font-weight: 500;
+        font-size: 0.88rem;
+        letter-spacing: 0.2px;
+    }
+
+    .participant-remove {
+        position: absolute;
+        right: 8px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        opacity: 0;
+        transition: opacity 0.15s ease-in-out;
+        font-weight: bold;
+        font-size: 1.2rem;
+        line-height: 1;
+        color: white;
+    }
+
+    .participant-chip:hover .participant-remove {
+        opacity: 1;
+    }
+
+    .participant-chip:hover {
+        background-color: #0b5ed7 !important;
+    }
+</style>
 
 @code {
     protected override async Task OnParametersSetAsync()

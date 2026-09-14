@@ -1,6 +1,7 @@
 using System.Globalization;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.Web;
 using planirovanie.Data;
 using planirovanie.Models;
 using planirovanie.Services;
@@ -51,6 +52,66 @@ namespace planirovanie.Components.Scheduler
         protected void RemoveParticipant(string userId)
         {
             SelectedUserIds.Remove(userId);
+        }
+
+        protected void OnParticipantInput(ChangeEventArgs e)
+        {
+            ParticipantSearch = e.Value?.ToString() ?? string.Empty;
+            ShowParticipantDropdown = true;
+            StateHasChanged();
+        }
+
+        protected async Task OnParticipantsFocusOut(FocusEventArgs e)
+        {
+            await Task.Delay(150);
+            ShowParticipantDropdown = false;
+            StateHasChanged();
+        }
+
+        // --- Блок для автокомплита организатора (Кто проводит) ---
+        protected string? SelectedOrganizerId { get; set; }
+        protected string OrganizerSearch { get; set; } = string.Empty;
+        protected bool ShowOrganizerDropdown { get; set; } = false;
+
+        protected List<ApplicationUser> FilteredOrganizers => string.IsNullOrWhiteSpace(OrganizerSearch)
+            ? AvailableUsers
+            : AvailableUsers
+                .Where(u => (u.FullName ?? string.Empty).Contains(OrganizerSearch, StringComparison.OrdinalIgnoreCase)
+                         || (u.Position ?? string.Empty).Contains(OrganizerSearch, StringComparison.OrdinalIgnoreCase)
+                         || (u.UserName ?? string.Empty).Contains(OrganizerSearch, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+
+        protected void SetOrganizer(string userId)
+        {
+            SelectedOrganizerId = userId;
+            OrganizerSearch = string.Empty;
+            ShowOrganizerDropdown = false;
+        }
+
+        protected void ClearOrganizer()
+        {
+            SelectedOrganizerId = null;
+            OrganizerSearch = string.Empty;
+        }
+
+        protected ApplicationUser? GetOrganizerUser()
+        {
+            if (string.IsNullOrWhiteSpace(SelectedOrganizerId)) return null;
+            return AvailableUsers.FirstOrDefault(u => u.Id == SelectedOrganizerId);
+        }
+
+        protected void OnOrganizerInput(ChangeEventArgs e)
+        {
+            OrganizerSearch = e.Value?.ToString() ?? string.Empty;
+            ShowOrganizerDropdown = true;
+            StateHasChanged();
+        }
+
+        protected async Task OnOrganizerFocusOut(FocusEventArgs e)
+        {
+            await Task.Delay(150);
+            ShowOrganizerDropdown = false;
+            StateHasChanged();
         }
 
         protected ApplicationUser? GetUserById(string userId)
@@ -232,8 +293,11 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 CategoryId = Categories.FirstOrDefault()?.Id ?? 0
             };
             SelectedUserIds = new List<string>();
+            SelectedOrganizerId = null;
             ParticipantSearch = string.Empty;
+            OrganizerSearch = string.Empty;
             ShowParticipantDropdown = false;
+            ShowOrganizerDropdown = false;
             FormMessage = string.Empty;
             IsFormOpen = true;
         }
@@ -252,12 +316,24 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 AdditionalInfo = evt.AdditionalInfo,
                 CategoryId = evt.CategoryId
             };
-            SelectedUserIds = await Db.EventParticipants
+            var participants = await Db.EventParticipants
                 .Where(ep => ep.EventId == evt.Id)
-                .Select(ep => ep.UserId)
                 .ToListAsync();
+
+            SelectedUserIds = participants
+                .Where(ep => ep.Role == "Participant")
+                .Select(ep => ep.UserId)
+                .ToList();
+
+            SelectedOrganizerId = participants
+                .Where(ep => ep.Role == "Organizer")
+                .Select(ep => ep.UserId)
+                .FirstOrDefault();
+
             ParticipantSearch = string.Empty;
+            OrganizerSearch = string.Empty;
             ShowParticipantDropdown = false;
+            ShowOrganizerDropdown = false;
             FormMessage = string.Empty;
             IsFormOpen = true;
         }
@@ -323,7 +399,18 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                         .ToListAsync();
                     Db.EventParticipants.RemoveRange(existingParticipants);
 
-                    // Добавляем новые
+                    // Добавляем организатора
+                    if (!string.IsNullOrWhiteSpace(SelectedOrganizerId))
+                    {
+                        Db.EventParticipants.Add(new EventParticipant
+                        {
+                            EventId = entity.Id,
+                            UserId = SelectedOrganizerId,
+                            Role = "Organizer"
+                        });
+                    }
+
+                    // Добавляем участников
                     foreach (var uid in SelectedUserIds)
                     {
                         Db.EventParticipants.Add(new EventParticipant
@@ -337,6 +424,17 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 else
                 {
                     await EventSvc.AddEventAsync(entity, userId, userRole);
+
+                    // Добавляем организатора к новому мероприятию
+                    if (!string.IsNullOrWhiteSpace(SelectedOrganizerId))
+                    {
+                        Db.EventParticipants.Add(new EventParticipant
+                        {
+                            EventId = entity.Id,
+                            UserId = SelectedOrganizerId,
+                            Role = "Organizer"
+                        });
+                    }
 
                     // Добавляем участников к новому мероприятию
                     foreach (var uid in SelectedUserIds)

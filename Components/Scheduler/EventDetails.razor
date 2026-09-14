@@ -52,19 +52,26 @@
                         </div>
                     }
 
-                    @if (!string.IsNullOrEmpty(EventItem.Organizer))
+                    @if (OrganizerUser != null)
                     {
                         <div class="col-md-6">
-                            <div class="fw-bold text-muted small mb-1">ОРГАНИЗАТОР</div>
-                            <div>@EventItem.Organizer</div>
+                            <div class="fw-bold text-muted small mb-1">КТО ПРОВОДИТ</div>
+                            <div>👤 @GetFullName(OrganizerUser)</div>
                         </div>
                     }
 
-                    @if (!string.IsNullOrEmpty(EventItem.Participants))
+                    @if (ParticipantsList.Any())
                     {
                         <div class="col-12">
                             <div class="fw-bold text-muted small mb-1">УЧАСТНИКИ</div>
-                            <div>@EventItem.Participants</div>
+                            <div class="d-flex flex-wrap gap-2 mt-1">
+                                @foreach (var participant in ParticipantsList)
+                                {
+                                    <span class="badge bg-primary rounded-pill px-3 py-2" style="font-weight: 500;">
+                                        @GetFullName(participant)
+                                    </span>
+                                }
+                            </div>
                         </div>
                     }
 
@@ -86,13 +93,12 @@
 
     private Event? EventItem;
     private EventCategory? Category;
+    private ApplicationUser? OrganizerUser;
+    private List<ApplicationUser> ParticipantsList = new();
     private static readonly CultureInfo Ru = new("ru-RU");
 
     protected override async Task OnParametersSetAsync()
     {
-        // Отдельный scope с собственным DbContext, чтобы запросы этой страницы
-        // не пересекались по времени с запросами LoginDisplay (один scoped-контекст
-        // не может выполнять две операции параллельно в статическом SSR).
         using var scope = ScopeFactory.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
 
@@ -101,7 +107,32 @@
         {
             Category = await db.EventCategories.AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == EventItem.CategoryId);
+
+            // Загружаем организатора и участников из таблицы связей
+            var eventParticipants = await db.EventParticipants
+                .AsNoTracking()
+                .Include(ep => ep.User)
+                .Where(ep => ep.EventId == Id)
+                .ToListAsync();
+
+            OrganizerUser = eventParticipants
+                .Where(ep => ep.Role == "Organizer")
+                .Select(ep => ep.User)
+                .FirstOrDefault();
+
+            ParticipantsList = eventParticipants
+                .Where(ep => ep.Role == "Participant")
+                .Select(ep => ep.User)
+                .Where(u => u != null)
+                .ToList();
         }
+    }
+
+    private string GetFullName(ApplicationUser? user)
+    {
+        if (user == null) return string.Empty;
+        var name = string.IsNullOrWhiteSpace(user.FullName) ? user.UserName ?? user.Id : user.FullName;
+        return string.IsNullOrEmpty(user.Position) ? name : $"{name} — {user.Position}";
     }
 
     private string GetCategoryColor(int categoryId) => Category?.Name switch
