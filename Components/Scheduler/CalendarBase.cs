@@ -12,7 +12,7 @@ namespace planirovanie.Components.Scheduler
     public class CalendarBase : ComponentBase
     {
         [Inject] protected EventService EventSvc { get; set; } = default!;
-        [Inject] protected ApplicationDbContext Db { get; set; } = default!;
+        [Inject] protected IDbContextFactory<ApplicationDbContext> DbFactory { get; set; } = default!;
         [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
         [Inject] protected NavigationManager Navigation { get; set; } = default!;
 
@@ -146,7 +146,8 @@ namespace planirovanie.Components.Scheduler
 
         protected async Task LoadAvailableUsersAsync()
         {
-            AvailableUsers = await Db.Users
+            using var db = await DbFactory.CreateDbContextAsync();
+            AvailableUsers = await db.Users
                 .OrderBy(u => u.FullName ?? u.UserName ?? u.Id)
                 .ToListAsync();
         }
@@ -186,7 +187,8 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
 
         protected async Task LoadCategoriesAsync()
         {
-            Categories = await Db.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
+            using var db = await DbFactory.CreateDbContextAsync();
+            Categories = await db.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
             if (Categories.Count > 0 && EditingEvent.CategoryId == 0)
             {
                 EditingEvent.CategoryId = Categories[0].Id;
@@ -316,7 +318,8 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 AdditionalInfo = evt.AdditionalInfo,
                 CategoryId = evt.CategoryId
             };
-            var participants = await Db.EventParticipants
+            using var db = await DbFactory.CreateDbContextAsync();
+            var participants = await db.EventParticipants
                 .Where(ep => ep.EventId == evt.Id)
                 .ToListAsync();
 
@@ -392,17 +395,25 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                 if (EditingEvent.Id > 0)
                 {
                     await EventSvc.UpdateEventAsync(entity, userId, userRole);
+                }
+                else
+                {
+                    await EventSvc.AddEventAsync(entity, userId, userRole);
+                }
 
+                // Отдельный контекст для работы с участниками
+                using (var db = await DbFactory.CreateDbContextAsync())
+                {
                     // Удаляем старые записи об участниках
-                    var existingParticipants = await Db.EventParticipants
+                    var existingParticipants = await db.EventParticipants
                         .Where(ep => ep.EventId == entity.Id)
                         .ToListAsync();
-                    Db.EventParticipants.RemoveRange(existingParticipants);
+                    db.EventParticipants.RemoveRange(existingParticipants);
 
                     // Добавляем организатора
                     if (!string.IsNullOrWhiteSpace(SelectedOrganizerId))
                     {
-                        Db.EventParticipants.Add(new EventParticipant
+                        db.EventParticipants.Add(new EventParticipant
                         {
                             EventId = entity.Id,
                             UserId = SelectedOrganizerId,
@@ -413,42 +424,16 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                     // Добавляем участников
                     foreach (var uid in SelectedUserIds)
                     {
-                        Db.EventParticipants.Add(new EventParticipant
+                        db.EventParticipants.Add(new EventParticipant
                         {
                             EventId = entity.Id,
                             UserId = uid,
                             Role = "Participant"
                         });
                     }
+
+                    await db.SaveChangesAsync();
                 }
-                else
-                {
-                    await EventSvc.AddEventAsync(entity, userId, userRole);
-
-                    // Добавляем организатора к новому мероприятию
-                    if (!string.IsNullOrWhiteSpace(SelectedOrganizerId))
-                    {
-                        Db.EventParticipants.Add(new EventParticipant
-                        {
-                            EventId = entity.Id,
-                            UserId = SelectedOrganizerId,
-                            Role = "Organizer"
-                        });
-                    }
-
-                    // Добавляем участников к новому мероприятию
-                    foreach (var uid in SelectedUserIds)
-                    {
-                        Db.EventParticipants.Add(new EventParticipant
-                        {
-                            EventId = entity.Id,
-                            UserId = uid,
-                            Role = "Participant"
-                        });
-                    }
-                }
-
-                await Db.SaveChangesAsync();
 
                 CloseForm();
                 await LoadEventsForRange(GetVisibleStart(), GetVisibleEnd());

@@ -7,12 +7,12 @@ namespace planirovanie.Services
 {
     public class EventService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbFactory;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public EventService(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public EventService(IDbContextFactory<ApplicationDbContext> dbFactory, UserManager<ApplicationUser> userManager)
         {
-            _context = context;
+            _dbFactory = dbFactory;
             _userManager = userManager;
         }
 
@@ -79,7 +79,8 @@ namespace planirovanie.Services
 
         public async Task<List<EventCategory>> GetCategoriesAsync()
         {
-            return await _context.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
+            using var context = await _dbFactory.CreateDbContextAsync();
+            return await context.EventCategories.AsNoTracking().OrderBy(c => c.Id).ToListAsync();
         }
 
         private static DateTime GetMoscowNow()
@@ -104,8 +105,10 @@ namespace planirovanie.Services
 
             newEvent.CreatedByUserId = userId;
             newEvent.CreatedAt = GetMoscowNow();
-            _context.Events.Add(newEvent);
-            await _context.SaveChangesAsync();
+
+            using var context = await _dbFactory.CreateDbContextAsync();
+            context.Events.Add(newEvent);
+            await context.SaveChangesAsync();
         }
 
         public async Task UpdateEventAsync(Event updatedEvent, string userId, string? userRole = null)
@@ -114,7 +117,8 @@ namespace planirovanie.Services
             if (!CanAddEvent(updatedEvent.StartDate, userRole))
                 throw new InvalidOperationException("Срок изменения данного плана истек согласно Регламенту.");
 
-            var existing = await _context.Events.FindAsync(updatedEvent.Id);
+            using var context = await _dbFactory.CreateDbContextAsync();
+            var existing = await context.Events.FindAsync(updatedEvent.Id);
             if (existing == null)
             {
                 await AddEventAsync(updatedEvent, userId, userRole);
@@ -131,22 +135,24 @@ namespace planirovanie.Services
             existing.CategoryId = updatedEvent.CategoryId;
             existing.UpdatedAt = GetMoscowNow();
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
 
         public async Task DeleteEventAsync(int id)
         {
-            var existing = await _context.Events.FindAsync(id);
+            using var context = await _dbFactory.CreateDbContextAsync();
+            var existing = await context.Events.FindAsync(id);
             if (existing != null)
             {
-                _context.Events.Remove(existing);
-                await _context.SaveChangesAsync();
+                context.Events.Remove(existing);
+                await context.SaveChangesAsync();
             }
         }
 
         public async Task<List<Event>> GetEventsByDateRangeAsync(DateTime start, DateTime end)
         {
-            return await _context.Events
+            using var context = await _dbFactory.CreateDbContextAsync();
+            return await context.Events
                 .AsNoTracking()
                 .Include(e => e.Category)
                 .Where(e => e.StartDate >= start && e.StartDate <= end)
