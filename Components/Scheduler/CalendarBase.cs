@@ -16,6 +16,20 @@ namespace planirovanie.Components.Scheduler
         [Inject] protected AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
         [Inject] protected NavigationManager Navigation { get; set; } = default!;
 
+        // --- Статический кэш списка пользователей ---
+        private static List<ApplicationUser>? _cachedUsers;
+        private static DateTime _cacheExpiry = DateTime.MinValue;
+        private static readonly object _cacheLock = new();
+
+        public static void InvalidateUserCache()
+        {
+            lock (_cacheLock)
+            {
+                _cachedUsers = null;
+                _cacheExpiry = DateTime.MinValue;
+            }
+        }
+
         protected DateTime CurrentDate { get; set; } = DateTime.Today;
         protected List<Event> Events { get; set; } = new();
         protected List<EventCategory> Categories { get; set; } = new();
@@ -146,10 +160,36 @@ namespace planirovanie.Components.Scheduler
 
         protected async Task LoadAvailableUsersAsync()
         {
+            // 1. Проверяем кэш
+            lock (_cacheLock)
+            {
+                if (_cachedUsers != null && DateTime.Now < _cacheExpiry)
+                {
+                    AvailableUsers = _cachedUsers;
+                    return;
+                }
+            }
+
+            // 2. Загружаем из БД только нужные поля для экономии памяти и трафика
             using var db = await DbFactory.CreateDbContextAsync();
-            AvailableUsers = await db.Users
+            var users = await db.Users
+                .Select(u => new ApplicationUser
+                {
+                    Id = u.Id,
+                    FullName = u.FullName,
+                    UserName = u.UserName,
+                    Position = u.Position
+                })
                 .OrderBy(u => u.FullName ?? u.UserName ?? u.Id)
                 .ToListAsync();
+
+            // 3. Сохраняем в кэш на 5 минут
+            lock (_cacheLock)
+            {
+                AvailableUsers = users;
+                _cachedUsers = users;
+                _cacheExpiry = DateTime.Now.AddMinutes(5);
+            }
         }
 
         protected void InitializeHolidays()
@@ -372,6 +412,42 @@ protected IEnumerable<Event> GetEventsForDaySorted(DateTime day)
                     FormMessage = "Время окончания должно быть позже времени начала.";
                     return;
                 }
+
+                // --- ЗАЩИТНАЯ ПРОВЕРКА: существуют ли выбранные пользователи в БД ---
+                var allSelectedIds = new List<string>();
+                if (!string.IsNullOrWhiteSpace(SelectedOrganizerId)) 
+                    allSelectedIds.Add(SelectedOrganizerId);
+                allSelectedIds.AddRange(SelectedUserIds);
+
+                if (allSelectedIds.Any())
+                {
+                    using var dbCheck = await DbFactory.CreateDbContextAsync();
+                    var validIds = await dbCheck.Users
+                        .Where(u => allSelectedIds.Contains(u.Id))
+                        .Select(u => u.Id)
+                        .ToListAsync();
+
+                    var invalidIds = allSelectedIds.Except(validIds).ToList();
+                    if (invalidIds.Any())
+                    {
+                        FormMessage = "Некоторые выбранные пользователи были удалены из системы. Список обновлён, проверьте и попробуйте снова.";
+                        
+                        // Принудительно очищаем кэш и перезагружаем актуальные данные
+                        InvalidateUserCache();
+                        await LoadAvailableUsersAsync();
+                        
+                        // Удаляем невалидных ID из формы
+                        SelectedUserIds.RemoveAll(id => invalidIds.Contains(id));
+                        if (!string.IsNullOrWhiteSpace(SelectedOrganizerId) && invalidIds.Contains(SelectedOrganizerId))
+                        {
+                            SelectedOrganizerId = null;
+                        }
+                        
+                        StateHasChanged(); // Обновляем UI, чтобы пользователь увидел изменения
+                        return; // Прерываем сохранение
+                    }
+                }
+                // ---------------------------------------------------------------------
 
                 var entity = new Event
                 {

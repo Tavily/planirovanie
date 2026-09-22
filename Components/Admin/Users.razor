@@ -5,6 +5,7 @@
 @using Microsoft.EntityFrameworkCore
 @using planirovanie.Data
 @using planirovanie.Models
+@using planirovanie.Components.Scheduler
 @attribute [Authorize(Roles = "Administrator")]
 @inject ApplicationDbContext DbContext
 @inject UserManager<ApplicationUser> UserManager
@@ -295,6 +296,9 @@
             
             CloseDialog();
             await LoadUsersAsync();
+
+            // Очищаем кэш пользователей для всех сеансов
+            CalendarBase.InvalidateUserCache();
         }
         catch (Exception ex)
         {
@@ -312,6 +316,9 @@
             message = "Пользователь удален";
             messageType = "success";
             await LoadUsersAsync();
+
+            // Очищаем кэш пользователей для всех сеансов
+            CalendarBase.InvalidateUserCache();
         }
     }
 
