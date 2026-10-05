@@ -83,68 +83,97 @@
                     <button type="button" class="btn-close" @onclick="CloseDialog"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" @bind="newUserEmail" />
+                    @if (editingUserId == null)
+                    {
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input type="checkbox" class="form-check-input" @bind="isGuestAccount" id="guestSwitch" />
+                                <label class="form-check-label" for="guestSwitch">
+                                    <strong>Гостевой аккаунт</strong>
+                                </label>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Юзернейм</label>
-                                <input type="text" class="form-control" @bind="newUserName" />
+
+                        @* Поля-приманки: перехватывают автозаполнение браузера *@
+                        <div style="position:absolute; left:-9999px; top:-9999px;" aria-hidden="true">
+                            <input type="text" name="fakeuser" autocomplete="username" tabindex="-1" />
+                            <input type="email" name="fakeemail" autocomplete="email" tabindex="-1" />
+                            <input type="tel" name="fakephone" autocomplete="tel" tabindex="-1" />
+                            <input type="password" name="fakepass" autocomplete="current-password" tabindex="-1" />
+                        </div>
+                    }
+
+                    @if (!isGuestAccount || editingUserId != null)
+                    {
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Email</label>
+                                    <input type="email" class="form-control" @bind="newUserEmail" autocomplete="off" />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Юзернейм</label>
+                                    <input type="text" class="form-control" @bind="newUserName" autocomplete="off" />
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    
+                    }
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">ФИО</label>
-                                <input type="text" class="form-control" @bind="newUserFullName" placeholder="Иван Иванов" />
+                                <input type="text" class="form-control" @bind="newUserFullName" placeholder="Иван Иванов" autocomplete="off" />
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Должность</label>
-                                <input type="text" class="form-control" @bind="newUserPosition" placeholder="Специалист" />
+                                <input type="text" class="form-control" @bind="newUserPosition" placeholder="Специалист" autocomplete="off" />
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label">Телефон</label>
-                                <input type="tel" class="form-control" @bind="newUserPhone" placeholder="+7 (XXX) XXX-XX-XX" />
+                                <input type="tel" class="form-control" @bind="newUserPhone" placeholder="+7 (XXX) XXX-XX-XX" autocomplete="off" />
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label">Роль</label>
-                                <select class="form-select" @bind="newUserRole">
-                                    <option value="User">Исполнитель (User)</option>
-                                    <option value="Executor">Ответственный (Executor)</option>
-                                    <option value="Administrator">Администратор (Administrator)</option>
-                                </select>
+                        @if (!isGuestAccount || editingUserId != null)
+                        {
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Роль</label>
+                                    <select class="form-select" @bind="newUserRole">
+                                        <option value="User">Исполнитель (User)</option>
+                                        <option value="Executor">Ответственный (Executor)</option>
+                                        <option value="Administrator">Администратор (Administrator)</option>
+                                    </select>
+                                </div>
                             </div>
-                        </div>
+                        }
                     </div>
-                    
-                    @if (editingUserId == null)
+
+                    @if (!isGuestAccount || editingUserId != null)
                     {
-                        <div class="mb-3">
-                            <label class="form-label">Пароль <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" @bind="newUserPassword" />
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="mb-3">
-                            <label class="form-label">Изменить пароль (оставить пусто если не менять)</label>
-                            <input type="password" class="form-control" @bind="newUserPassword" />
-                        </div>
+                        @if (editingUserId == null)
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Пароль <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" @bind="newUserPassword" autocomplete="new-password" />
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Изменить пароль (оставить пусто если не менять)</label>
+                                <input type="password" class="form-control" @bind="newUserPassword" autocomplete="new-password" />
+                            </div>
+                        }
                     }
                 </div>
                 <div class="modal-footer">
@@ -185,6 +214,7 @@
     private string? newUserPhone = null;
     private string message = string.Empty;
     private string messageType = "info";
+    private bool isGuestAccount = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -213,6 +243,7 @@
         newUserPosition = null;
         newUserPhone = null;
         newUserRole = "User";
+        isGuestAccount = false;
         showDialog = true;
     }
 
@@ -240,21 +271,57 @@
         {
             if (editingUserId == null)
             {
-                // Создание нового пользователя
-                var user = new ApplicationUser 
-                { 
-                    UserName = string.IsNullOrEmpty(newUserName) ? newUserEmail.Split('@')[0] : newUserName,
-                    Email = newUserEmail,
-                    FullName = newUserFullName,
-                    Position = newUserPosition,
-                    PhoneNumber = newUserPhone
-                };
-                var result = await UserManager.CreateAsync(user, newUserPassword);
+                ApplicationUser user;
+                string passwordToUse;
                 
+                if (isGuestAccount)
+                {
+                    if (string.IsNullOrWhiteSpace(newUserFullName))
+                    {
+                        message = "ФИО обязательно для гостевого аккаунта";
+                        messageType = "danger";
+                        return;
+                    }
+                    
+                    var generatedUserName = GenerateGuestUserName(newUserFullName);
+                    user = new ApplicationUser
+                    {
+                        UserName = generatedUserName,
+                        Email = $"guest{new Random().Next(1000, 9999)}@guest.local",
+                        FullName = newUserFullName,
+                        Position = newUserPosition,
+                        PhoneNumber = newUserPhone
+                    };
+                    passwordToUse = Guid.NewGuid().ToString("N").Substring(0, 8);
+                    newUserRole = "User";
+                }
+                else
+                {
+                    if (string.IsNullOrWhiteSpace(newUserEmail) || string.IsNullOrWhiteSpace(newUserPassword))
+                    {
+                        message = "Email и пароль обязательны";
+                        messageType = "danger";
+                        return;
+                    }
+                    
+                    user = new ApplicationUser
+                    {
+                        UserName = string.IsNullOrEmpty(newUserName) ? newUserEmail.Split('@')[0] : newUserName,
+                        Email = newUserEmail,
+                        FullName = newUserFullName,
+                        Position = newUserPosition,
+                        PhoneNumber = newUserPhone
+                    };
+                    passwordToUse = newUserPassword;
+                }
+
+                var result = await UserManager.CreateAsync(user, passwordToUse);
                 if (result.Succeeded)
                 {
                     await UserManager.AddToRoleAsync(user, newUserRole);
-                    message = "Пользователь успешно создан";
+                    message = isGuestAccount 
+                        ? "Гостевой аккаунт создан" 
+                        : "Пользователь успешно создан";
                     messageType = "success";
                 }
                 else
@@ -266,7 +333,6 @@
             }
             else
             {
-                // Редактирование существующего
                 var user = await UserManager.FindByIdAsync(editingUserId);
                 if (user != null)
                 {
@@ -277,12 +343,10 @@
                     user.PhoneNumber = newUserPhone;
                     await UserManager.UpdateAsync(user);
                     
-                    // Обновляем роль
                     var currentRoles = await UserManager.GetRolesAsync(user);
                     await UserManager.RemoveFromRolesAsync(user, currentRoles);
                     await UserManager.AddToRoleAsync(user, newUserRole);
                     
-                    // Если пароль заполнен, меняем его
                     if (!string.IsNullOrEmpty(newUserPassword))
                     {
                         await UserManager.RemovePasswordAsync(user);
@@ -296,8 +360,6 @@
             
             CloseDialog();
             await LoadUsersAsync();
-
-            // Очищаем кэш пользователей для всех сеансов
             CalendarBase.InvalidateUserCache();
         }
         catch (Exception ex)
@@ -325,5 +387,40 @@
     private void CloseDialog()
     {
         showDialog = false;
+        isGuestAccount = false;
+    }
+
+    private string GenerateGuestUserName(string fullName)
+    {
+        var translitMap = new Dictionary<char, string>
+        {
+            {'а', "a"}, {'б', "b"}, {'в', "v"}, {'г', "g"}, {'д', "d"},
+            {'е', "e"}, {'ё', "e"}, {'ж', "zh"}, {'з', "z"}, {'и', "i"},
+            {'й', "y"}, {'к', "k"}, {'л', "l"}, {'м', "m"}, {'н', "n"},
+            {'о', "o"}, {'п', "p"}, {'р', "r"}, {'с', "s"}, {'т', "t"},
+            {'у', "u"}, {'ф', "f"}, {'х', "h"}, {'ц', "ts"}, {'ч', "ch"},
+            {'ш', "sh"}, {'щ', "sch"}, {'ъ', ""}, {'ы', "y"}, {'ь', ""},
+            {'э', "e"}, {'ю', "yu"}, {'я', "ya"}
+        };
+        
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var initials = "";
+        
+        if (parts.Length >= 2)
+        {
+            var firstLetter = char.ToLower(parts[0][0]);
+            var secondLetter = char.ToLower(parts[1][0]);
+            
+            initials = translitMap.ContainsKey(firstLetter) ? translitMap[firstLetter] : firstLetter.ToString();
+            initials += translitMap.ContainsKey(secondLetter) ? translitMap[secondLetter] : secondLetter.ToString();
+        }
+        else if (parts.Length == 1 && parts[0].Length > 0)
+        {
+            var firstLetter = char.ToLower(parts[0][0]);
+            initials = translitMap.ContainsKey(firstLetter) ? translitMap[firstLetter] : firstLetter.ToString();
+        }
+        
+        var random = new Random();
+        return $"{initials}{random.Next(1000, 9999)}";
     }
 }
