@@ -166,11 +166,13 @@
                                 @if (SelectedOrganizerId != null)
                                 {
                                     var organizerUser = GetOrganizerUser();
-                                    <div class="participant-chip badge bg-success rounded-pill d-inline-flex align-items-center position-relative">
-                                        @(organizerUser != null ? organizerUser.FullName ?? organizerUser.UserName ?? SelectedOrganizerId : SelectedOrganizerId)
-                                        <span class="participant-remove" @onclick="ClearOrganizer" @onclick:stopPropagation="true">×</span>
+                                    <input class="form-control" type="text" disabled placeholder="Организатор выбран" />
+                                    <div class="d-flex flex-wrap gap-2 mt-2">
+                                        <div class="participant-chip badge bg-success rounded-pill d-inline-flex align-items-center position-relative">
+                                            @(organizerUser != null ? organizerUser.FullName ?? organizerUser.UserName ?? SelectedOrganizerId : SelectedOrganizerId)
+                                            <span class="participant-remove" @onclick="ClearOrganizer" @onclick:stopPropagation="true">×</span>
+                                        </div>
                                     </div>
-                                    <input class="form-control mt-2" type="text" disabled placeholder="Организатор выбран" />
                                 }
                                 else
                                 {
@@ -189,6 +191,7 @@
                                                 <button type="button"
                                                         class="list-group-item list-group-item-action"
                                                         @onmousedown:preventDefault
+                                                        @onmousedown="() => SetOrganizer(user.Id)"
                                                         @onclick="() => SetOrganizer(user.Id)">
                                                     @displayName
                                                 </button>
@@ -218,6 +221,7 @@
                                                     class="list-group-item list-group-item-action @(isAlreadySelected ? "disabled text-muted" : "")"
                                                     disabled="@isAlreadySelected"
                                                     @onmousedown:preventDefault
+                                                    @onmousedown="() => AddParticipant(user.Id)"
                                                     @onclick="() => AddParticipant(user.Id)">
                                                 @displayName
                                                 @if (isAlreadySelected)
