@@ -1,0 +1,205 @@
+@using System.Globalization
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@using planirovanie.Models
+@inherits planirovanie.Components.Scheduler.CalendarBase
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <h5 class="mb-0">Моя план-сетка</h5>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftBack" title="На день назад">←</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftForward" title="На день вперёд">→</button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="ResetToToday">Сегодня</button>
+            </div>
+        </div>
+
+        @if (!_isLoaded)
+        {
+            <div class="text-muted small">Загрузка…</div>
+        }
+        else
+        {
+            var days = GetPersonalDays();
+            var rows = GetRows();
+
+            @if (!_myEvents.Any())
+            {
+                <div class="text-muted small mb-2">Личных мероприятий в этом окне нет — всё время свободно.</div>
+            }
+
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle text-center">
+                    <thead>
+                        <tr>
+                            <th style="width: 80px;">Время</th>
+                            @foreach (var day in days)
+                            {
+                                var isToday = day.Date == DateTime.Today;
+                                <th class="@(isToday ? "personal-today-cell" : string.Empty) @(IsHoliday(day) ? "table-warning" : string.Empty)">
+                                    <span class="fw-bold text-capitalize">@day.ToString("ddd, dd MMM", new CultureInfo("ru-RU"))</span>
+                                    @if (isToday)
+                                    {
+                                        <span class="badge bg-primary ms-1" style="font-size: 0.65rem;">сегодня</span>
+                                    }
+                                </th>
+                            }
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @for (var ri = 0; ri < rows.Count; ri++)
+                        {
+                            var row = rows[ri];
+                            var isLast = ri == rows.Count - 1;
+                            <tr>
+                                <td class="fw-bold text-muted">@row.Time.ToString("HH:mm")</td>
+                                @foreach (var day in days)
+                                {
+                                    var isToday = day.Date == DateTime.Today;
+                                    var evs = row.DayEvents[day];
+                                    <td class="week-cell p-1 @(isToday ? "personal-today-cell" + (isLast ? " personal-today-bottom" : string.Empty) : string.Empty)" style="min-width: 130px;">
+                                        @foreach (var evt in evs)
+                                        {
+                                            <a class="event-pill d-block w-100 text-start"
+                                               style="border-left: 4px solid @GetCategoryColor(evt.CategoryId); text-decoration:none; color:inherit;"
+                                               href="/event/@evt.Id">
+                                                <small class="fw-bold d-block text-truncate">@evt.Title</small>
+                                                <small class="text-muted d-block">@evt.StartDate.ToString("HH:mm")</small>
+                                                <span class="badge @(_myRoles.GetValueOrDefault(evt.Id) == "Organizer" ? "bg-success" : "bg-primary")" style="font-size: 0.65rem;">
+                                                    @(_myRoles.GetValueOrDefault(evt.Id) == "Organizer" ? "Организатор" : "Участник")
+                                                </span>
+                                            </a>
+                                        }
+                                    </td>
+                                }
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .personal-today-cell {
+        border-left: 2px solid #0d6efd !important;
+        border-right: 2px solid #0d6efd !important;
+    }
+
+    thead .personal-today-cell {
+        border-top: 2px solid #0d6efd !important;
+    }
+
+    .personal-today-bottom {
+        border-bottom: 2px solid #0d6efd !important;
+    }
+</style>
+
+@code {
+    private DateTime _anchor = DateTime.Today;
+    private string? _currentUserId;
+    private bool _isLoaded;
+    private List<Event> _myEvents = new();
+    private Dictionary<int, string> _myRoles = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(_currentUserId))
+        {
+            var name = authState.User.Identity?.Name;
+            using var db = await DbFactory.CreateDbContextAsync();
+            _currentUserId = await db.Users.AsNoTracking()
+                .Where(u => u.UserName == name)
+                .Select(u => u.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        await LoadPersonalEventsAsync();
+        _isLoaded = true;
+    }
+
+    private List<DateTime> GetPersonalDays() =>
+        Enumerable.Range(0, 7).Select(i => _anchor.Date.AddDays(i)).ToList();
+
+    private List<(DateTime Time, Dictionary<DateTime, List<Event>> DayEvents)> GetRows()
+    {
+        var days = GetPersonalDays();
+        var rows = new List<(DateTime Time, Dictionary<DateTime, List<Event>> DayEvents)>();
+
+        for (var hour = 8; hour <= 18; hour++)
+        {
+            var time = new DateTime(_anchor.Year, _anchor.Month, _anchor.Day, hour, 0, 0);
+            rows.Add((time, days.ToDictionary(
+                d => d,
+                d => _myEvents.Where(e => e.StartDate.Date == d.Date && e.StartDate.Hour == hour && e.StartDate.Minute == 0).ToList())));
+        }
+
+        var otherEvents = _myEvents
+            .Where(e => e.StartDate.Minute != 0 || e.StartDate.Hour < 8 || e.StartDate.Hour > 18)
+            .OrderBy(e => e.StartDate)
+            .ToList();
+
+        foreach (var ev in otherEvents)
+        {
+            rows.Add((ev.StartDate, days.ToDictionary(
+                d => d,
+                d => _myEvents.Where(e2 => e2.StartDate.Date == d.Date && e2.StartDate == ev.StartDate).ToList())));
+        }
+
+        return rows.OrderBy(r => r.Time).ToList();
+    }
+
+    private async Task LoadPersonalEventsAsync()
+    {
+        _myEvents = new List<Event>();
+        _myRoles = new Dictionary<int, string>();
+        if (string.IsNullOrEmpty(_currentUserId)) return;
+
+        var start = _anchor.Date;
+        var end = start.AddDays(7);
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        var myLinks = await db.EventParticipants.AsNoTracking()
+            .Where(ep => ep.UserId == _currentUserId)
+            .Select(ep => new { ep.EventId, ep.Role })
+            .ToListAsync();
+
+        var ids = myLinks.Select(l => l.EventId).Distinct().ToList();
+        if (ids.Count == 0) return;
+
+        _myEvents = await db.Events.AsNoTracking()
+            .Where(e => ids.Contains(e.Id) && e.StartDate >= start && e.StartDate < end)
+            .OrderBy(e => e.StartDate)
+            .ToListAsync();
+
+        _myRoles = myLinks.GroupBy(l => l.EventId)
+            .ToDictionary(g => g.Key, g => g.Any(x => x.Role == "Organizer") ? "Organizer" : "Participant");
+    }
+
+    private async Task ShiftBack()
+    {
+        _anchor = _anchor.AddDays(-1);
+        await LoadPersonalEventsAsync();
+    }
+
+    private async Task ShiftForward()
+    {
+        _anchor = _anchor.AddDays(1);
+        await LoadPersonalEventsAsync();
+    }
+
+    private async Task ResetToToday()
+    {
+        _anchor = DateTime.Today;
+        await LoadPersonalEventsAsync();
+    }
+}

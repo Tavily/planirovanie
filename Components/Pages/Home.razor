@@ -1,6 +1,12 @@
 ﻿@page "/"
+@using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Components.Scheduler
+@using planirovanie.Data
 @attribute [Authorize]
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Система планирования мероприятий</PageTitle>
 
@@ -11,28 +17,42 @@
         <div class="col-md-12">
             <div class="card">
                 <div class="card-body">
-                    <h5 class="card-title">Добро пожаловать!</h5>
-                    <AuthorizeView>
-                        <Authorized>
-                            <p class="card-text">
-                                Вы вошли как: <strong>@context.User.Identity?.Name</strong>
-                            </p>
-                            <p class="card-text">
-                                Роль:
-                                @if (context.User.IsInRole("Administrator"))
-                                {
-                                    <span class="badge bg-danger">Администратор</span>
-                                }
-                                else if (context.User.IsInRole("Executor"))
-                                {
-                                    <span class="badge bg-primary">Исполнитель</span>
-                                }
-                            </p>
-                        </Authorized>
-                    </AuthorizeView>
+                    <h5 class="card-title">Добро пожаловать, @_fullName!</h5>
                     <a href="/calendar/day" class="btn btn-primary">Перейти к календарю мероприятий</a>
                 </div>
             </div>
         </div>
     </div>
+
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <PersonalSchedule />
+        </div>
+    </div>
 </div>
+
+@code {
+    private string _fullName = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var name = authState.User.Identity?.Name;
+
+        using var db = await DbFactory.CreateDbContextAsync();
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            userId = await db.Users.AsNoTracking()
+                .Where(u => u.UserName == name)
+                .Select(u => u.Id)
+                .FirstOrDefaultAsync();
+        }
+
+        _fullName = await db.Users.AsNoTracking()
+            .Where(u => u.Id == userId)
+            .Select(u => u.FullName ?? u.UserName ?? u.Id)
+            .FirstOrDefaultAsync() ?? name ?? string.Empty;
+    }
+}
