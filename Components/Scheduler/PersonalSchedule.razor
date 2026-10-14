@@ -9,7 +9,7 @@
 <div class="card shadow-sm">
     <div class="card-body">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-            <h5 class="mb-0">Моя план-сетка</h5>
+            <h5 class="mb-0">План-сетка: @_fullName</h5>
             <div class="d-flex gap-2">
                 <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftBack" title="На день назад">←</button>
                 <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftForward" title="На день вперёд">→</button>
@@ -25,11 +25,6 @@
         {
             var days = GetPersonalDays();
             var rows = GetRows();
-
-            @if (!_myEvents.Any())
-            {
-                <div class="text-muted small mb-2">Личных мероприятий в этом окне нет — всё время свободно.</div>
-            }
 
             <div class="table-responsive">
                 <table class="table table-bordered align-middle text-center">
@@ -102,6 +97,7 @@
 @code {
     private DateTime _anchor = DateTime.Today;
     private string? _currentUserId;
+    private string _fullName = string.Empty;
     private bool _isLoaded;
     private List<Event> _myEvents = new();
     private Dictionary<int, string> _myRoles = new();
@@ -112,15 +108,22 @@
 
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         _currentUserId = authState.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var loginName = authState.User.Identity?.Name;
 
-        if (string.IsNullOrEmpty(_currentUserId))
+        using (var db = await DbFactory.CreateDbContextAsync())
         {
-            var name = authState.User.Identity?.Name;
-            using var db = await DbFactory.CreateDbContextAsync();
-            _currentUserId = await db.Users.AsNoTracking()
-                .Where(u => u.UserName == name)
-                .Select(u => u.Id)
-                .FirstOrDefaultAsync();
+            if (string.IsNullOrEmpty(_currentUserId))
+            {
+                _currentUserId = await db.Users.AsNoTracking()
+                    .Where(u => u.UserName == loginName)
+                    .Select(u => u.Id)
+                    .FirstOrDefaultAsync();
+            }
+
+            _fullName = await db.Users.AsNoTracking()
+                .Where(u => u.Id == _currentUserId)
+                .Select(u => u.FullName ?? u.UserName ?? u.Id)
+                .FirstOrDefaultAsync() ?? loginName ?? string.Empty;
         }
 
         await LoadPersonalEventsAsync();
