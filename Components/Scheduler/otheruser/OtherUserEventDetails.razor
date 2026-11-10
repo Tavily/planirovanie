@@ -1,10 +1,12 @@
 ﻿@page "/schedule/{UserId}/event/{Id:int}"
 @layout planirovanie.Components.Layout.EmptyLayout
+@using Microsoft.AspNetCore.Authorization
 @using System.Globalization
 @using Microsoft.EntityFrameworkCore
 @using planirovanie.Data
 @using planirovanie.Models
 @inject IDbContextFactory<ApplicationDbContext> DbFactory
+@attribute [Authorize]
 
 <PageTitle>@(_event == null ? "Мероприятие" : _event.Title)</PageTitle>
 

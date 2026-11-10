@@ -1,7 +1,8 @@
 @page "/"
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
 @using planirovanie.Components.Scheduler
-@inject NavigationManager Navigation
+@inject IJSRuntime JS
 @attribute [Authorize]
 
 <PageTitle>Система планирования мероприятий</PageTitle>
@@ -36,16 +37,17 @@
                          OnUserSelected="OpenUserSchedule" />
     }
 
-    @code {
-        private bool IsUserSearchOpen { get; set; }
-
-        private void CloseUserSearch() => IsUserSearchOpen = false;
-
-        private Task OpenUserSchedule(ApplicationUser user)
-        {
-            IsUserSearchOpen = false;
-            Navigation.NavigateTo($"/schedule/{Uri.EscapeDataString(user.Id)}");
-            return Task.CompletedTask;
-        }
-    }
 </div>
+
+@code {
+    private bool IsUserSearchOpen { get; set; }
+
+    private void CloseUserSearch() => IsUserSearchOpen = false;
+
+    private async Task OpenUserSchedule(ApplicationUser user)
+    {
+        IsUserSearchOpen = false;
+        var url = $"/schedule/{Uri.EscapeDataString(user.Id)}";
+        await JS.InvokeVoidAsync("window.open", url, "_blank");
+    }
+}

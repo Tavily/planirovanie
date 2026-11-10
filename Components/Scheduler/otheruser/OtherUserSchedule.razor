@@ -30,10 +30,13 @@
                     <div class="text-muted">@_user.Position</div>
                 }
             </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary" @onclick="ShiftBack" aria-label="Предыдущая неделя">←</button>
-                <button class="btn btn-outline-primary" @onclick="ResetToToday">Сегодня</button>
-                <button class="btn btn-outline-secondary" @onclick="ShiftForward" aria-label="Следующая неделя">→</button>
+            <div class="d-flex flex-wrap gap-2 align-items-center">
+                <input type="date" class="form-control form-control-sm" style="width: 150px;"
+                       @bind="_selectedDate" />
+                <button class="btn btn-outline-primary btn-sm" @onclick="GoToDate">Перейти</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftBack" aria-label="Предыдущий день">←</button>
+                <button class="btn btn-outline-primary btn-sm" @onclick="ResetToToday">Сегодня</button>
+                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftForward" aria-label="Следующий день">→</button>
             </div>
         </div>
 
@@ -56,7 +59,7 @@
                                     <th style="width: 80px;">Время</th>
                                     @foreach (var day in days)
                                     {
-                                        <th class="@(day.Date == DateTime.Today ? "table-primary" : string.Empty)">
+                                        <th class="@(day.Date == _selectedDate.Date ? "table-success" : day.Date == DateTime.Today ? "table-primary" : string.Empty)">
                                             <span class="text-capitalize">@day.ToString("ddd, dd MMM", Ru)</span>
                                         </th>
                                     }
@@ -97,6 +100,7 @@
 
     private static readonly CultureInfo Ru = new("ru-RU");
     private DateTime _anchor = DateTime.Today;
+    private DateTime _selectedDate = DateTime.Today;
     private ApplicationUser? _user;
     private List<Event> _events = new();
     private bool _isLoaded;
@@ -161,19 +165,29 @@
 
     private async Task ShiftBack()
     {
-        _anchor = _anchor.AddDays(-7);
+        _anchor = _anchor.AddDays(-1);
+        _selectedDate = _anchor;
         await LoadEventsAsync();
     }
 
     private async Task ShiftForward()
     {
-        _anchor = _anchor.AddDays(7);
+        _anchor = _anchor.AddDays(1);
+        _selectedDate = _anchor;
+        await LoadEventsAsync();
+    }
+
+    private async Task GoToDate()
+    {
+        _anchor = _selectedDate.Date;
+        _selectedDate = _anchor;
         await LoadEventsAsync();
     }
 
     private async Task ResetToToday()
     {
         _anchor = DateTime.Today;
+        _selectedDate = _anchor;
         await LoadEventsAsync();
     }
 
