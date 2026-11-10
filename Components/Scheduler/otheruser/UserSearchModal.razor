@@ -1,0 +1,89 @@
+﻿@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+@if (IsOpen)
+{
+    <div class="modal-backdrop show"></div>
+    <div class="modal d-block" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="user-search-title">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="user-search-title">План-сетка пользователя</h5>
+                    <button type="button" class="btn-close" aria-label="Закрыть" @onclick="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label class="form-label" for="user-search">Поиск по имени или должности</label>
+                    <input id="user-search" class="form-control" @bind="SearchTerm" @bind:event="oninput"
+                           placeholder="Введите имя или должность" />
+
+                    @if (_users == null)
+                    {
+                        <div class="text-muted mt-3">Загрузка пользователей…</div>
+                    }
+                    else if (!FilteredUsers.Any())
+                    {
+                        <div class="text-muted mt-3">Пользователи не найдены.</div>
+                    }
+                    else
+                    {
+                        <div class="list-group mt-3">
+                            @foreach (var user in FilteredUsers)
+                            {
+                                <button type="button" class="list-group-item list-group-item-action text-start"
+                                        @onclick="() => SelectUser(user)">
+                                    <span class="d-block fw-semibold">@GetDisplayName(user)</span>
+                                    @if (!string.IsNullOrWhiteSpace(user.Position))
+                                    {
+                                        <span class="small text-muted">@user.Position</span>
+                                    }
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="Close">Закрыть</button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsOpen { get; set; }
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<ApplicationUser> OnUserSelected { get; set; }
+
+    private List<ApplicationUser>? _users;
+    private string SearchTerm { get; set; } = string.Empty;
+
+    private IEnumerable<ApplicationUser> FilteredUsers =>
+        (_users ?? new List<ApplicationUser>())
+        .Where(user => string.IsNullOrWhiteSpace(SearchTerm)
+            || (user.FullName?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (user.Position?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false)
+            || (user.UserName?.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        _users = await db.Users.AsNoTracking()
+            .Select(user => new ApplicationUser
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Position = user.Position,
+                UserName = user.UserName
+            })
+            .OrderBy(user => user.FullName ?? user.UserName ?? user.Id)
+            .ToListAsync();
+    }
+
+    private string GetDisplayName(ApplicationUser user) =>
+        string.IsNullOrWhiteSpace(user.FullName) ? user.UserName ?? user.Id : user.FullName;
+
+    private Task Close() => OnClose.InvokeAsync();
+
+    private Task SelectUser(ApplicationUser user) => OnUserSelected.InvokeAsync(user);
+}

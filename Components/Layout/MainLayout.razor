@@ -46,7 +46,7 @@
 
 @code {
     private bool IsEventDetailsPage =>
-        Nav.Uri.Contains("/events/", StringComparison.OrdinalIgnoreCase);
+        Nav.Uri.Contains("/event/", StringComparison.OrdinalIgnoreCase);
     private bool IsCalendarPage =>
         Nav.Uri.Contains("/calendar", StringComparison.OrdinalIgnoreCase) ||
         Nav.Uri.Contains("/events", StringComparison.OrdinalIgnoreCase);

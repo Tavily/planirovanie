@@ -1,0 +1,140 @@
+﻿@page "/schedule/{UserId}/event/{Id:int}"
+@layout planirovanie.Components.Layout.EmptyLayout
+@using System.Globalization
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@using planirovanie.Models
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>@(_event == null ? "Мероприятие" : _event.Title)</PageTitle>
+
+<div class="container py-4">
+    @if (!_isLoaded)
+    {
+        <div class="text-muted">Загрузка мероприятия…</div>
+    }
+    else if (_event == null || _user == null)
+    {
+        <div class="alert alert-warning">
+            Мероприятие не найдено в план-сетке этого пользователя.
+            <a class="alert-link ms-2" href="@GetScheduleUrl()">Вернуться к план-сетке</a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <div>
+                <h1 class="h3 mb-1">@_event.Title</h1>
+                <span class="badge" style="background: @GetCategoryColor(_event.CategoryId);">
+                    @(_category?.Name ?? "Без категории")
+                </span>
+            </div>
+            <a class="btn btn-outline-secondary" href="@GetScheduleUrl()">← К план-сетке @GetDisplayName(_user)</a>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="fw-bold text-muted small mb-1">НАЧАЛО</div>
+                        <div class="text-capitalize">@_event.StartDate.ToString("dddd, dd MMMM yyyy, HH:mm", Ru)</div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="fw-bold text-muted small mb-1">ОКОНЧАНИЕ</div>
+                        <div>@(_event.EndDate?.ToString("dddd, dd MMMM yyyy, HH:mm", Ru) ?? "—")</div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(_event.Location))
+                    {
+                        <div class="col-md-6">
+                            <div class="fw-bold text-muted small mb-1">МЕСТО ПРОВЕДЕНИЯ</div>
+                            <div>📍 @_event.Location</div>
+                        </div>
+                    }
+                    @if (_participants.Any())
+                    {
+                        <div class="col-12">
+                            <div class="fw-bold text-muted small mb-1">ОРГАНИЗАТОРЫ И УЧАСТНИКИ</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                @foreach (var participant in _participants)
+                                {
+                                    <span class="badge @(participant.Role == "Organizer" ? "bg-success" : "bg-primary") rounded-pill px-3 py-2">
+                                        @GetDisplayName(participant.User) — @(participant.Role == "Organizer" ? "Организатор" : "Участник")
+                                    </span>
+                                }
+                            </div>
+                        </div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_event.AdditionalInfo))
+                    {
+                        <div class="col-12">
+                            <div class="fw-bold text-muted small mb-1">ДОПОЛНИТЕЛЬНАЯ ИНФОРМАЦИЯ</div>
+                            <div style="white-space: pre-wrap;">@_event.AdditionalInfo</div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string UserId { get; set; } = string.Empty;
+    [Parameter] public int Id { get; set; }
+
+    private static readonly CultureInfo Ru = new("ru-RU");
+    private ApplicationUser? _user;
+    private Event? _event;
+    private EventCategory? _category;
+    private List<EventParticipant> _participants = new();
+    private bool _isLoaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoaded = false;
+        using var db = await DbFactory.CreateDbContextAsync();
+        _user = await db.Users.AsNoTracking()
+            .Where(user => user.Id == UserId)
+            .Select(user => new ApplicationUser
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                UserName = user.UserName,
+                Position = user.Position
+            })
+            .FirstOrDefaultAsync();
+
+        if (_user != null)
+        {
+            _event = await db.Events.AsNoTracking()
+                .Where(evt => evt.Id == Id
+                    && evt.EventParticipants.Any(participant => participant.UserId == UserId))
+                .FirstOrDefaultAsync();
+
+            if (_event != null)
+            {
+                _category = await db.EventCategories.AsNoTracking()
+                    .FirstOrDefaultAsync(category => category.Id == _event.CategoryId);
+                _participants = await db.EventParticipants.AsNoTracking()
+                    .Where(participant => participant.EventId == Id)
+                    .Include(participant => participant.User)
+                    .ToListAsync();
+            }
+        }
+
+        _isLoaded = true;
+    }
+
+    private string GetScheduleUrl() => $"/schedule/{Uri.EscapeDataString(UserId)}";
+
+    private static string GetDisplayName(ApplicationUser user) =>
+        string.IsNullOrWhiteSpace(user.FullName) ? user.UserName ?? user.Id : user.FullName;
+
+    private static string GetCategoryColor(int categoryId) => categoryId switch
+    {
+        1 => "#dc3545",
+        2 => "#0d6efd",
+        3 => "#198754",
+        4 => "#6f42c1",
+        _ => "#6c757d"
+    };
+}

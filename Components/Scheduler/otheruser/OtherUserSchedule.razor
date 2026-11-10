@@ -1,0 +1,194 @@
+﻿@page "/schedule/{UserId}"
+@layout planirovanie.Components.Layout.EmptyLayout
+@using System.Globalization
+@using Microsoft.EntityFrameworkCore
+@using planirovanie.Data
+@using planirovanie.Models
+@inject IDbContextFactory<ApplicationDbContext> DbFactory
+
+<PageTitle>@(_user == null ? "План-сетка пользователя" : $"План-сетка: {_user.FullName ?? _user.UserName}")</PageTitle>
+
+<div class="container-fluid py-4">
+    @if (!_isLoaded)
+    {
+        <div class="text-muted">Загрузка план-сетки…</div>
+    }
+    else if (_user == null)
+    {
+        <div class="alert alert-warning">
+            Пользователь не найден.
+            <a class="alert-link ms-2" href="/">Вернуться на главную</a>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+            <div>
+                <h1 class="h3 mb-1">План-сетка: @GetDisplayName(_user)</h1>
+                @if (!string.IsNullOrWhiteSpace(_user.Position))
+                {
+                    <div class="text-muted">@_user.Position</div>
+                }
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary" @onclick="ShiftBack" aria-label="Предыдущая неделя">←</button>
+                <button class="btn btn-outline-primary" @onclick="ResetToToday">Сегодня</button>
+                <button class="btn btn-outline-secondary" @onclick="ShiftForward" aria-label="Следующая неделя">→</button>
+            </div>
+        </div>
+
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="h5 mb-3 text-capitalize">
+                    @_anchor.ToString("dd MMMM", Ru) — @_anchor.AddDays(6).ToString("dd MMMM yyyy", Ru)
+                </h2>
+                @if (_events.Count == 0)
+                {
+                    <p class="text-muted mb-0">На этой неделе мероприятий нет.</p>
+                }
+                else
+                {
+                    var days = Enumerable.Range(0, 7).Select(offset => _anchor.Date.AddDays(offset)).ToList();
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle text-center">
+                            <thead>
+                                <tr>
+                                    <th style="width: 80px;">Время</th>
+                                    @foreach (var day in days)
+                                    {
+                                        <th class="@(day.Date == DateTime.Today ? "table-primary" : string.Empty)">
+                                            <span class="text-capitalize">@day.ToString("ddd, dd MMM", Ru)</span>
+                                        </th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var row in GetRows(days))
+                                {
+                                    <tr>
+                                        <td class="fw-bold text-muted">@row.Time.ToString("HH:mm")</td>
+                                        @foreach (var day in days)
+                                        {
+                                            <td style="min-width: 150px;">
+                                                @foreach (var evt in row.EventsByDay[day])
+                                                {
+                                                    <a class="d-block text-start text-decoration-none text-body border-start border-4 rounded p-2 mb-1"
+                                                       style="border-color: @GetCategoryColor(evt.CategoryId) !important;"
+                                                       href="@GetEventUrl(evt.Id)">
+                                                        <span class="d-block fw-semibold">@evt.Title</span>
+                                                        <span class="small text-muted">@evt.StartDate.ToString("HH:mm")</span>
+                                                    </a>
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public string UserId { get; set; } = string.Empty;
+
+    private static readonly CultureInfo Ru = new("ru-RU");
+    private DateTime _anchor = DateTime.Today;
+    private ApplicationUser? _user;
+    private List<Event> _events = new();
+    private bool _isLoaded;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _isLoaded = false;
+        _events.Clear();
+        using var db = await DbFactory.CreateDbContextAsync();
+        _user = await db.Users.AsNoTracking()
+            .Where(user => user.Id == UserId)
+            .Select(user => new ApplicationUser
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                UserName = user.UserName,
+                Position = user.Position
+            })
+            .FirstOrDefaultAsync();
+
+        if (_user != null)
+        {
+            await LoadEventsAsync();
+        }
+
+        _isLoaded = true;
+    }
+
+    private async Task LoadEventsAsync()
+    {
+        using var db = await DbFactory.CreateDbContextAsync();
+        var start = _anchor.Date;
+        var end = start.AddDays(7);
+        _events = await db.Events.AsNoTracking()
+            .Where(evt => evt.StartDate >= start && evt.StartDate < end
+                && evt.EventParticipants.Any(participant => participant.UserId == UserId))
+            .OrderBy(evt => evt.StartDate)
+            .ToListAsync();
+    }
+
+    private List<(DateTime Time, Dictionary<DateTime, List<Event>> EventsByDay)> GetRows(List<DateTime> days)
+    {
+        var rows = Enumerable.Range(8, 11)
+            .Select(hour => new DateTime(_anchor.Year, _anchor.Month, _anchor.Day, hour, 0, 0))
+            .Select(time => (time, days.ToDictionary(
+                day => day,
+                day => _events.Where(evt => evt.StartDate.Date == day.Date
+                    && evt.StartDate.Hour == time.Hour && evt.StartDate.Minute == 0).ToList())))
+            .ToList();
+
+        foreach (var evt in _events.Where(evt => evt.StartDate.Minute != 0
+                     || evt.StartDate.Hour < 8 || evt.StartDate.Hour > 18))
+        {
+            rows.Add((evt.StartDate, days.ToDictionary(
+                day => day,
+                day => _events.Where(other => other.StartDate.Date == day.Date
+                    && other.StartDate == evt.StartDate).ToList())));
+        }
+
+        return rows.OrderBy(row => row.Item1).ToList();
+    }
+
+    private async Task ShiftBack()
+    {
+        _anchor = _anchor.AddDays(-7);
+        await LoadEventsAsync();
+    }
+
+    private async Task ShiftForward()
+    {
+        _anchor = _anchor.AddDays(7);
+        await LoadEventsAsync();
+    }
+
+    private async Task ResetToToday()
+    {
+        _anchor = DateTime.Today;
+        await LoadEventsAsync();
+    }
+
+    private string GetEventUrl(int eventId) =>
+        $"/schedule/{Uri.EscapeDataString(UserId)}/event/{eventId}";
+
+    private static string GetDisplayName(ApplicationUser user) =>
+        string.IsNullOrWhiteSpace(user.FullName) ? user.UserName ?? user.Id : user.FullName;
+
+    private static string GetCategoryColor(int categoryId) => categoryId switch
+    {
+        1 => "#dc3545",
+        2 => "#0d6efd",
+        3 => "#198754",
+        4 => "#6f42c1",
+        _ => "#6c757d"
+    };
+}
