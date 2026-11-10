@@ -30,13 +30,17 @@
                     <div class="text-muted">@_user.Position</div>
                 }
             </div>
-            <div class="d-flex flex-wrap gap-2 align-items-center">
-                <input type="date" class="form-control form-control-sm" style="width: 150px;"
-                       @bind="_selectedDate" />
-                <button class="btn btn-outline-primary btn-sm" @onclick="GoToDate">Перейти</button>
-                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftBack" aria-label="Предыдущий день">←</button>
-                <button class="btn btn-outline-primary btn-sm" @onclick="ResetToToday">Сегодня</button>
-                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftForward" aria-label="Следующий день">→</button>
+            <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <input type="date" class="form-control form-control-sm" style="width: 150px;"
+                           @bind="_selectedDate" />
+                    <button class="btn btn-outline-primary btn-sm" @onclick="GoToDate">Перейти</button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftBack" aria-label="Предыдущий день">←</button>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="ResetToToday">Сегодня</button>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftForward" aria-label="Следующий день">→</button>
+                </div>
             </div>
         </div>
 

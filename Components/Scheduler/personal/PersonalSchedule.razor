@@ -10,10 +10,17 @@
     <div class="card-body">
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
             <h5 class="mb-0">План-сетка: @_fullName</h5>
-            <div class="d-flex gap-2">
-                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftBack" title="На день назад">←</button>
-                <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftForward" title="На день вперёд">→</button>
-                <button class="btn btn-outline-primary btn-sm" @onclick="ResetToToday">Сегодня</button>
+            <div class="d-flex flex-column align-items-start align-items-md-end gap-2">
+                <div class="d-flex flex-wrap gap-2 align-items-center">
+                    <input type="date" class="form-control form-control-sm" style="width: 150px;"
+                           @bind="_selectedDate" aria-label="Выбрать дату план-сетки" />
+                    <button class="btn btn-outline-primary btn-sm" @onclick="GoToDate">Перейти</button>
+                </div>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftBack" title="На день назад">←</button>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="ShiftForward" title="На день вперёд">→</button>
+                    <button class="btn btn-outline-primary btn-sm" @onclick="ResetToToday">Сегодня</button>
+                </div>
             </div>
         </div>
 
@@ -96,6 +103,7 @@
 
 @code {
     private DateTime _anchor = DateTime.Today;
+    private DateTime _selectedDate = DateTime.Today;
     private string? _currentUserId;
     private string _fullName = string.Empty;
     private bool _isLoaded;
@@ -191,18 +199,28 @@
     private async Task ShiftBack()
     {
         _anchor = _anchor.AddDays(-1);
+        _selectedDate = _anchor;
         await LoadPersonalEventsAsync();
     }
 
     private async Task ShiftForward()
     {
         _anchor = _anchor.AddDays(1);
+        _selectedDate = _anchor;
+        await LoadPersonalEventsAsync();
+    }
+
+    private async Task GoToDate()
+    {
+        _anchor = _selectedDate.Date;
+        _selectedDate = _anchor;
         await LoadPersonalEventsAsync();
     }
 
     private async Task ResetToToday()
     {
         _anchor = DateTime.Today;
+        _selectedDate = _anchor;
         await LoadPersonalEventsAsync();
     }
 }
